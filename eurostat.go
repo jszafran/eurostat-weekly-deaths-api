@@ -63,9 +63,9 @@ func ReadData() (string, error) {
 	return string(tsvData), nil
 }
 
-// WeekOfYearPositionMap calculates a mapping between header position index and week of year
+// WeekOfYearHeaderPositionMap calculates a mapping between header position index and week of year
 // it represents.
-func WeekOfYearPositionMap(header string) (map[int]WeekOfYear, error) {
+func WeekOfYearHeaderPositionMap(header string) (map[int]WeekOfYear, error) {
 	m := make(map[int]WeekOfYear)
 	for i, v := range strings.Split(header, "\t")[1:] {
 		woy, err := ParseWeekOfYear(v)

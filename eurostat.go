@@ -35,9 +35,12 @@ type Metadata struct {
 // - sex (if reported)
 // - country
 type WeeklyDeathsRecord struct {
-	WeekOfYear WeekOfYear
-	Deaths     sql.NullInt64
-	Metadata   Metadata
+	Week    int
+	Year    int
+	Deaths  sql.NullInt64
+	Age     string
+	Sex     string
+	Country string
 }
 
 // ReadData makes a HTTP requests to fetch gzipped TSV data from Eurostat website.
@@ -154,9 +157,12 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear) ([]WeeklyDeathsRecord,
 		dv := ParseDeathsValue(v)
 		woy := woyPosMap[i+1]
 		record := WeeklyDeathsRecord{
-			Metadata:   metadata,
-			WeekOfYear: woy,
-			Deaths:     dv,
+			Week:    woy.Week,
+			Year:    woy.Year,
+			Deaths:  dv,
+			Age:     metadata.Age,
+			Sex:     metadata.Sex,
+			Country: metadata.Country,
 		}
 		wdr = append(wdr, record)
 	}

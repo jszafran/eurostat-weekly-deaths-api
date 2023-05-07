@@ -48,3 +48,7 @@ go.work
 .vscode/
 
 data_sample.tsv
+
+sample.go
+
+eurostat.db

@@ -59,6 +59,25 @@ func RecreateDB(db *sql.DB) error {
 	return nil
 }
 
+func PopulateMetadataTables(db *sql.DB) error {
+	_, err := db.Exec("INSERT INTO countries SELECT DISTINCT country FROM weekly_deaths")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("INSERT INTO ages SELECT DISTINCT age FROM weekly_deaths")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("INSERT INTO genders SELECT DISTINCT sex FROM weekly_deaths")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func InsertWeeklyDeathsData(records []WeeklyDeathsRecord, db *sql.DB) error {
 	tx, err := db.Begin()
 	if err != nil {

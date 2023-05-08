@@ -77,7 +77,7 @@ func WeekOfYearHeaderPositionMap(header string) (map[int]WeekOfYear, error) {
 		if err != nil {
 			return m, err
 		}
-		m[i] = woy
+		m[i+1] = woy
 	}
 	return m, nil
 }

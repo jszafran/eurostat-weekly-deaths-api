@@ -48,6 +48,7 @@ type WeeklyDeathsRecord struct {
 func ReadData() (string, error) {
 	var data string
 
+	log.Println("Fetching data from Eurostat.")
 	resp, err := http.Get(DATA_URL)
 	if err != nil {
 		return data, err
@@ -63,6 +64,7 @@ func ReadData() (string, error) {
 		return data, err
 	}
 
+	log.Println("Data fetched successfully.")
 	return string(tsvData), nil
 }
 
@@ -168,4 +170,30 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear) ([]WeeklyDeathsRecord,
 	}
 
 	return wdr, nil
+}
+
+func ParseData(data string) ([]WeeklyDeathsRecord, error) {
+	var records []WeeklyDeathsRecord
+
+	split := strings.Split(data, "\n")
+	header := split[0]
+	rows := split[1:]
+
+	woyPosMap, err := WeekOfYearHeaderPositionMap(header)
+	if err != nil {
+		return records, err
+	}
+
+	for _, line := range rows {
+		parsedRecords, err := ParseLine(line, woyPosMap)
+		if err != nil {
+			return records, err
+		}
+
+		for _, record := range parsedRecords {
+			records = append(records, record)
+		}
+	}
+
+	return records, nil
 }

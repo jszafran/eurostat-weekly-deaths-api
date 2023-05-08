@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -17,23 +19,39 @@ func GetDB() (*sql.DB, error) {
 	return db, err
 }
 
-// RecreateDB drops and creates a weekly_deaths table.
-func RecreateDB(db *sql.DB) error {
-	_, err := db.Exec("DROP TABLE IF EXISTS weekly_deaths")
+func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
+	log.Printf("Recreating %s table\n", table)
+	_, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table))
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(`
-		CREATE TABLE weekly_deaths (
-			week INTEGER NOT NULL,
-			year INTEGER NOT NULL,
-			deaths INTEGER,
-			age STRING,
-			sex STRING,
-			country STRING
-		) 
-	`)
+	_, err = db.Exec(ddlQuery)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RecreateDB drops and creates a weekly_deaths, countries, ages, genders tables.
+func RecreateDB(db *sql.DB) error {
+	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL, db)
+	if err != nil {
+		return err
+	}
+
+	err = RecreateTable("countries", CREATE_COUNTRIES_SQL, db)
+	if err != nil {
+		return err
+	}
+
+	err = RecreateTable("ages", CREATE_AGES_SQL, db)
+	if err != nil {
+		return err
+	}
+
+	err = RecreateTable("genders", CREATE_GENDERS_SQL, db)
 	if err != nil {
 		return err
 	}

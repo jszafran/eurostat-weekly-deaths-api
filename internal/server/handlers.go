@@ -17,7 +17,7 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 		sex     string
 		country string
 	)
-	countryParam := r.URL.Query().Get("url")
+	countryParam := r.URL.Query().Get("country")
 	if countryParam == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("country url param required"))
@@ -51,7 +51,7 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var weeklyDeaths []WeeklyDeaths
-	rows, err := stmt.Query(country, gender, age)
+	rows, err := stmt.Query(countryParam, genderParam, ageParam)
 	for rows.Next() {
 		err := rows.Scan(&week, &year, &deaths, &age, &sex, &country)
 		if err != nil {
@@ -67,7 +67,7 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	defer rows.Close()
-
+	log.Printf("%+v\n", weeklyDeaths)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"hello": "world"}`))

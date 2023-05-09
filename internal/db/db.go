@@ -1,9 +1,11 @@
-package main
+package db
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
+	"weekly_deaths/internal/eurostat"
+	"weekly_deaths/internal/queries"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -11,7 +13,7 @@ import (
 // GetDB prepares a connection to SQLite database.
 func GetDB() (*sql.DB, error) {
 	var db *sql.DB
-	db, err := sql.Open("sqlite3", "./eurostat.db")
+	db, err := sql.Open("sqlite3", "../../eurostat.db")
 	if err != nil {
 		return db, err
 	}
@@ -20,7 +22,7 @@ func GetDB() (*sql.DB, error) {
 }
 
 func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
-	log.Printf("Recreating %s table\n", table)
+	log.Printf("Recreating %s table.\n", table)
 	_, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table))
 	if err != nil {
 		return err
@@ -36,22 +38,22 @@ func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
 
 // RecreateDB drops and creates a weekly_deaths, countries, ages, genders tables.
 func RecreateDB(db *sql.DB) error {
-	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL, db)
+	err := RecreateTable("weekly_deaths", queries.CREATE_WEEKLY_DEATHS_SQL, db)
 	if err != nil {
 		return err
 	}
 
-	err = RecreateTable("countries", CREATE_COUNTRIES_SQL, db)
+	err = RecreateTable("countries", queries.CREATE_COUNTRIES_SQL, db)
 	if err != nil {
 		return err
 	}
 
-	err = RecreateTable("ages", CREATE_AGES_SQL, db)
+	err = RecreateTable("ages", queries.CREATE_AGES_SQL, db)
 	if err != nil {
 		return err
 	}
 
-	err = RecreateTable("genders", CREATE_GENDERS_SQL, db)
+	err = RecreateTable("genders", queries.CREATE_GENDERS_SQL, db)
 	if err != nil {
 		return err
 	}
@@ -78,7 +80,7 @@ func PopulateMetadataTables(db *sql.DB) error {
 	return nil
 }
 
-func InsertWeeklyDeathsData(records []WeeklyDeathsRecord, db *sql.DB) error {
+func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err

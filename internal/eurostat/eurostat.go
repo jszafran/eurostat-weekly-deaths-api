@@ -1,4 +1,4 @@
-package main
+package eurostat
 
 import (
 	"compress/gzip"

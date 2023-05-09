@@ -1,4 +1,4 @@
-package main
+package queries
 
 const CREATE_WEEKLY_DEATHS_SQL = `
 	CREATE TABLE weekly_deaths (

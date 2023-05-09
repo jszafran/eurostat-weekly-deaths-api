@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
 	"net/http"
 	"weekly_deaths/internal/db"
@@ -32,7 +33,7 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ageParam := r.URL.Query().Get("age")
-	if ageParam != "" {
+	if ageParam == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("age url param required"))
 		return
@@ -67,8 +68,9 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	defer rows.Close()
-	log.Printf("%+v\n", weeklyDeaths)
+
+	data := WeeklyDeathsResponse{Data: weeklyDeaths}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"hello": "world"}`))
+	json.NewEncoder(w).Encode(data)
 }

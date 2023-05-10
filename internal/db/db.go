@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"weekly_deaths/internal/eurostat"
@@ -9,6 +10,46 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+type JsonNullInt64 struct {
+	sql.NullInt64
+}
+
+func (v JsonNullInt64) MarshalJSON() ([]byte, error) {
+	if v.Valid {
+		return json.Marshal(v.Int64)
+	} else {
+		return json.Marshal(nil)
+	}
+}
+
+func (v *JsonNullInt64) UnmarshalJSON(data []byte) error {
+	// Unmarshalling into a pointer will let us detect null
+	var x *int64
+	if err := json.Unmarshal(data, &x); err != nil {
+		return err
+	}
+	if x != nil {
+		v.Valid = true
+		v.Int64 = *x
+	} else {
+		v.Valid = false
+	}
+	return nil
+}
+
+type WeeklyDeathsResponse struct {
+	Data []WeeklyDeaths `json:"data"`
+}
+
+type WeeklyDeaths struct {
+	Year         int           `json:"year"`
+	Week         int           `json:"week"`
+	WeeklyDeaths JsonNullInt64 `json:"weekly_deaths"`
+	Age          string        `json:"age"`
+	Gender       string        `json:"gender"`
+	Country      string        `json:"country"`
+}
 
 // GetDB prepares a connection to SQLite database.
 func GetDB() (*sql.DB, error) {
@@ -21,6 +62,7 @@ func GetDB() (*sql.DB, error) {
 	return db, err
 }
 
+// Recreate table drops and creates back given table.
 func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
 	log.Printf("Recreating %s table.\n", table)
 	_, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table))
@@ -72,7 +114,7 @@ func PopulateMetadataTables(db *sql.DB) error {
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO genders SELECT DISTINCT sex FROM weekly_deaths")
+	_, err = db.Exec("INSERT INTO genders SELECT DISTINCT gender FROM weekly_deaths")
 	if err != nil {
 		return err
 	}
@@ -88,7 +130,7 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 	defer tx.Rollback()
 
 	stmt, err := tx.Prepare(`
-		INSERT INTO weekly_deaths (week, year, deaths, age, sex, country)
+		INSERT INTO weekly_deaths (week, year, deaths, age, gender, country)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
@@ -102,7 +144,7 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 			r.Year,
 			r.Deaths,
 			r.Age,
-			r.Sex,
+			r.Gender,
 			r.Country,
 		)
 		if err != nil {
@@ -116,4 +158,45 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 	}
 
 	return nil
+}
+
+func GetCountryData(db *sql.DB, countryParam string, genderParam string, ageParam string, yearFrom int, yearTo int) ([]WeeklyDeaths, error) {
+	var (
+		week    int
+		year    int
+		deaths  JsonNullInt64
+		age     string
+		gender  string
+		country string
+		results []WeeklyDeaths
+	)
+
+	stmt, err := db.Prepare(queries.WEEKLY_DEATHS_FOR_COUNTRY)
+	if err != nil {
+		return results, err
+	}
+
+	rows, err := stmt.Query(countryParam, genderParam, ageParam, yearFrom, yearTo)
+	if err != nil {
+		return results, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&week, &year, &deaths, &age, &gender, &country)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		results = append(results, WeeklyDeaths{
+			Week:         week,
+			Year:         year,
+			WeeklyDeaths: deaths,
+			Age:          age,
+			Gender:       gender,
+			Country:      country,
+		})
+	}
+
+	return results, err
 }

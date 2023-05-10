@@ -6,7 +6,7 @@ const CREATE_WEEKLY_DEATHS_SQL = `
 		year INTEGER NOT NULL,
 		deaths INTEGER,
 		age STRING,
-		sex STRING,
+		gender STRING,
 		country STRING
 	) 
 `
@@ -23,11 +23,13 @@ const WEEKLY_DEATHS_FOR_COUNTRY = `
 		year,
 		deaths,
 		age,
-		sex,
+		gender,
 		country
 	FROM weekly_deaths
 	WHERE 1=1
 	AND country = ?
-	AND sex = ?
+	AND gender = ?
 	AND age = ?
+	AND year >= ?
+	AND year <= ?
 `

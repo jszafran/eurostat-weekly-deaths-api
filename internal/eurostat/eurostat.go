@@ -20,10 +20,10 @@ type WeekOfYear struct {
 	Week int
 }
 
-// Metadata contains information about age, sex and country of particular record.
+// Metadata contains information about age, gender and country of particular record.
 type Metadata struct {
 	Age     string
-	Sex     string
+	Gender  string
 	Country string
 }
 
@@ -32,14 +32,14 @@ type Metadata struct {
 // - year
 // - number of deaths (if reported)
 // - age bucket
-// - sex (if reported)
+// - gender
 // - country
 type WeeklyDeathsRecord struct {
 	Week    int
 	Year    int
 	Deaths  sql.NullInt64
 	Age     string
-	Sex     string
+	Gender  string
 	Country string
 }
 
@@ -94,7 +94,7 @@ func ParseMetadata(line string) (Metadata, error) {
 	}
 	return Metadata{
 		Age:     parts[0],
-		Sex:     parts[1],
+		Gender:  parts[1],
 		Country: parts[3],
 	}, nil
 }
@@ -163,7 +163,7 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear) ([]WeeklyDeathsRecord,
 			Year:    woy.Year,
 			Deaths:  dv,
 			Age:     metadata.Age,
-			Sex:     metadata.Sex,
+			Gender:  metadata.Gender,
 			Country: metadata.Country,
 		}
 		wdr = append(wdr, record)

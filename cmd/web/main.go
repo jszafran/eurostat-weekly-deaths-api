@@ -9,10 +9,14 @@ import (
 	"weekly_deaths/internal/server"
 )
 
+const port = ":3000"
+
 func main() {
 	r := chi.NewRouter()
 	r.Get("/api/countries", server.CountriesHandler)
-	err := http.ListenAndServe(":3000", r)
+	log.Printf("Starting the server on %s port\n", port)
+
+	err := http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatal(err)
 	}

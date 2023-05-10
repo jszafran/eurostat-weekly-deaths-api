@@ -10,6 +10,19 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type WeeklyDeathsResponse struct {
+	Data []WeeklyDeaths `json:"data"`
+}
+
+type WeeklyDeaths struct {
+	Year         int           `json:"year"`
+	Week         int           `json:"week"`
+	WeeklyDeaths sql.NullInt64 `json:"weekly_deaths"`
+	Age          string        `json:"age"`
+	Sex          string        `json:"sex"`
+	Country      string        `json:"country"`
+}
+
 // GetDB prepares a connection to SQLite database.
 func GetDB() (*sql.DB, error) {
 	var db *sql.DB
@@ -116,4 +129,45 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 	}
 
 	return nil
+}
+
+func GetCountryData(db *sql.DB, countryParam string, sexParam string, ageParam string) ([]WeeklyDeaths, error) {
+	var (
+		week    int
+		year    int
+		deaths  sql.NullInt64
+		age     string
+		sex     string
+		country string
+		results []WeeklyDeaths
+	)
+
+	stmt, err := db.Prepare(queries.WEEKLY_DEATHS_FOR_COUNTRY)
+	if err != nil {
+		return results, err
+	}
+
+	rows, err := stmt.Query(countryParam, sexParam, ageParam)
+	if err != nil {
+		return results, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&week, &year, &deaths, &age, &sex, &country)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		results = append(results, WeeklyDeaths{
+			Week:         week,
+			Year:         year,
+			WeeklyDeaths: deaths,
+			Age:          age,
+			Sex:          sex,
+			Country:      country,
+		})
+	}
+
+	return results, err
 }

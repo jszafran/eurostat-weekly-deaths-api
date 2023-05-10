@@ -132,7 +132,7 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 	return nil
 }
 
-func GetCountryData(db *sql.DB, countryParam string, genderParam string, ageParam string) ([]WeeklyDeaths, error) {
+func GetCountryData(db *sql.DB, countryParam string, genderParam string, ageParam string, yearFrom int, yearTo int) ([]WeeklyDeaths, error) {
 	var (
 		week    int
 		year    int
@@ -148,7 +148,7 @@ func GetCountryData(db *sql.DB, countryParam string, genderParam string, agePara
 		return results, err
 	}
 
-	rows, err := stmt.Query(countryParam, genderParam, ageParam)
+	rows, err := stmt.Query(countryParam, genderParam, ageParam, yearFrom, yearTo)
 	if err != nil {
 		return results, err
 	}

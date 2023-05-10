@@ -2,8 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"weekly_deaths/internal/db"
 )
 
@@ -26,13 +28,39 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	yearFromStr := r.URL.Query().Get("year_from")
+	if yearFromStr == "" {
+		WriteJSON(http.StatusBadRequest, w, map[string]string{"error": "year_from url param required"})
+		return
+	}
+	yearFrom, err := strconv.Atoi(yearFromStr)
+	if err != nil {
+		WriteJSON(http.StatusBadRequest, w, map[string]string{
+			"error": fmt.Sprintf("value %s cannot be converted to int", yearFromStr),
+		})
+		return
+	}
+
+	yearToStr := r.URL.Query().Get("year_to")
+	if yearToStr == "" {
+		WriteJSON(http.StatusBadRequest, w, map[string]string{"error": "year_to url param required"})
+		return
+	}
+	yearTo, err := strconv.Atoi(yearToStr)
+	if err != nil {
+		WriteJSON(http.StatusBadRequest, w, map[string]string{
+			"error": fmt.Sprintf("value %s cannot be converted to int", yearToStr),
+		})
+		return
+	}
+
 	database, err := db.GetDB()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	weeklyDeaths, err := db.GetCountryData(database, country, gender, age)
+	weeklyDeaths, err := db.GetCountryData(database, country, gender, age, yearFrom, yearTo)
 	if err != nil {
 		log.Println(err)
 		WriteJSON(http.StatusInternalServerError, w, map[string]string{"error": "internal server error"})

@@ -30,4 +30,6 @@ const WEEKLY_DEATHS_FOR_COUNTRY = `
 	AND country = ?
 	AND gender = ?
 	AND age = ?
+	AND year >= ?
+	AND year <= ?
 `

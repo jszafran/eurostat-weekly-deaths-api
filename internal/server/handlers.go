@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"weekly_deaths/internal/db"
 )
@@ -33,7 +34,9 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 
 	weeklyDeaths, err := db.GetCountryData(database, country, gender, age)
 	if err != nil {
-		WriteJSON(http.StatusInternalServerError, w, "server error")
+		log.Println(err)
+		WriteJSON(http.StatusInternalServerError, w, map[string]string{"error": "internal server error"})
+		return
 	}
 
 	data := db.WeeklyDeathsResponse{Data: weeklyDeaths}

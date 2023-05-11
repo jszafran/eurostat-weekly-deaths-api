@@ -2,15 +2,20 @@ package db
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"weekly_deaths/internal/eurostat"
 	"weekly_deaths/internal/queries"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// JsonNullInt64 marshals just the integer value (instead of the Valid/NullInt64 wrapper).
+// Credits: https://stackoverflow.com/questions/33072172/how-can-i-work-with-sql-null-values-and-json-in-a-good-way/33072822#33072822
 type JsonNullInt64 struct {
 	sql.NullInt64
 }
@@ -49,6 +54,12 @@ type WeeklyDeaths struct {
 	Age          string        `json:"age"`
 	Gender       string        `json:"gender"`
 	Country      string        `json:"country"`
+}
+
+type MetadataLabel struct {
+	Value string
+	Label string
+	Order int
 }
 
 // GetDB prepares a connection to SQLite database.
@@ -103,18 +114,36 @@ func RecreateDB(db *sql.DB) error {
 	return nil
 }
 
+func LoadMetadataTable(db *sql.DB, csvPath string, table string) error {
+	labels, err := parseLabelFile(csvPath)
+	if err != nil {
+		return err
+	}
+
+	if len(labels) == 0 {
+		log.Fatalf("Labels CSV: no records parsed for %s table.\n", table)
+	}
+
+	err = InsertLabelValues(db, table, labels)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func PopulateMetadataTables(db *sql.DB) error {
-	_, err := db.Exec("INSERT INTO countries SELECT DISTINCT country FROM weekly_deaths")
+	err := LoadMetadataTable(db, "../../resources/ages.csv", "ages")
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO ages SELECT DISTINCT age FROM weekly_deaths")
+	err = LoadMetadataTable(db, "../../resources/countries.csv", "countries")
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec("INSERT INTO genders SELECT DISTINCT gender FROM weekly_deaths")
+	err = LoadMetadataTable(db, "../../resources/genders.csv", "genders")
 	if err != nil {
 		return err
 	}
@@ -199,4 +228,65 @@ func GetCountryData(db *sql.DB, countryParam string, genderParam string, agePara
 	}
 
 	return results, err
+}
+
+func parseLabelFile(path string) ([]MetadataLabel, error) {
+	var records []MetadataLabel
+
+	file, err := os.Open(path)
+	if err != nil {
+		return records, nil
+	}
+
+	r := csv.NewReader(file)
+
+	rows, err := r.ReadAll()
+	if err != nil {
+		return records, nil
+	}
+
+	for _, row := range rows[1:] {
+		value := row[0]
+		label := row[1]
+		order, err := strconv.Atoi(row[2])
+		if err != nil {
+			return records, err
+		}
+		records = append(records, MetadataLabel{
+			Value: value,
+			Label: label,
+			Order: order,
+		})
+	}
+
+	return records, nil
+}
+
+func InsertLabelValues(db *sql.DB, table string, labels []MetadataLabel) error {
+	queryMap := map[string]string{
+		"countries": queries.COUNTRY_LABEL_INSERT_SQL,
+		"ages":      queries.AGE_LABEL_INSERT_SQL,
+		"genders":   queries.GENDER_LABEL_INSERT_SQL,
+	}
+
+	query, ok := queryMap[table]
+	if !ok {
+		log.Println("bad query")
+		return fmt.Errorf("no query found for %s table", table)
+	}
+
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	for _, l := range labels {
+		_, err = stmt.Exec(l.Value, l.Label, l.Order)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Printf("%d labels for table %s inserted.", len(labels), table)
+	return nil
 }

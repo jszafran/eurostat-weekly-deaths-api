@@ -52,3 +52,6 @@ data_sample.tsv
 sample.go
 
 eurostat.db
+
+.DS_Store
+

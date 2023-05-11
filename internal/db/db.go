@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"weekly_deaths/internal/eurostat"
-	"weekly_deaths/internal/queries"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -62,6 +61,13 @@ type MetadataLabel struct {
 	Order int
 }
 
+type MetadataLabelFromDB struct {
+	Value     string
+	Label     string
+	Order     int
+	LabelType string
+}
+
 // GetDB prepares a connection to SQLite database.
 func GetDB() (*sql.DB, error) {
 	var db *sql.DB
@@ -91,22 +97,22 @@ func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
 
 // RecreateDB drops and creates a weekly_deaths, countries, ages, genders tables.
 func RecreateDB(db *sql.DB) error {
-	err := RecreateTable("weekly_deaths", queries.CREATE_WEEKLY_DEATHS_SQL, db)
+	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL, db)
 	if err != nil {
 		return err
 	}
 
-	err = RecreateTable("countries", queries.CREATE_COUNTRIES_SQL, db)
+	err = RecreateTable("countries", CREATE_COUNTRIES_SQL, db)
 	if err != nil {
 		return err
 	}
 
-	err = RecreateTable("ages", queries.CREATE_AGES_SQL, db)
+	err = RecreateTable("ages", CREATE_AGES_SQL, db)
 	if err != nil {
 		return err
 	}
 
-	err = RecreateTable("genders", queries.CREATE_GENDERS_SQL, db)
+	err = RecreateTable("genders", CREATE_GENDERS_SQL, db)
 	if err != nil {
 		return err
 	}
@@ -189,7 +195,14 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 	return nil
 }
 
-func GetCountryData(db *sql.DB, countryParam string, genderParam string, ageParam string, yearFrom int, yearTo int) ([]WeeklyDeaths, error) {
+func GetCountryData(
+	db *sql.DB,
+	countryParam string,
+	genderParam string,
+	ageParam string,
+	yearFrom int,
+	yearTo int,
+) ([]WeeklyDeaths, error) {
 	var (
 		week    int
 		year    int
@@ -200,7 +213,7 @@ func GetCountryData(db *sql.DB, countryParam string, genderParam string, agePara
 		results []WeeklyDeaths
 	)
 
-	stmt, err := db.Prepare(queries.WEEKLY_DEATHS_FOR_COUNTRY)
+	stmt, err := db.Prepare(WEEKLY_DEATHS_FOR_COUNTRY)
 	if err != nil {
 		return results, err
 	}
@@ -227,7 +240,7 @@ func GetCountryData(db *sql.DB, countryParam string, genderParam string, agePara
 		})
 	}
 
-	return results, err
+	return results, nil
 }
 
 func parseLabelFile(path string) ([]MetadataLabel, error) {
@@ -264,14 +277,13 @@ func parseLabelFile(path string) ([]MetadataLabel, error) {
 
 func InsertLabelValues(db *sql.DB, table string, labels []MetadataLabel) error {
 	queryMap := map[string]string{
-		"countries": queries.COUNTRY_LABEL_INSERT_SQL,
-		"ages":      queries.AGE_LABEL_INSERT_SQL,
-		"genders":   queries.GENDER_LABEL_INSERT_SQL,
+		"countries": COUNTRY_LABEL_INSERT_SQL,
+		"ages":      AGE_LABEL_INSERT_SQL,
+		"genders":   GENDER_LABEL_INSERT_SQL,
 	}
 
 	query, ok := queryMap[table]
 	if !ok {
-		log.Println("bad query")
 		return fmt.Errorf("no query found for %s table", table)
 	}
 
@@ -289,4 +301,40 @@ func InsertLabelValues(db *sql.DB, table string, labels []MetadataLabel) error {
 
 	log.Printf("%d labels for table %s inserted.", len(labels), table)
 	return nil
+}
+
+func GetLabels(db *sql.DB) ([]MetadataLabelFromDB, error) {
+	var (
+		value     string
+		label     string
+		order     int
+		labelType string
+	)
+	var results []MetadataLabelFromDB
+
+	stmt, err := db.Prepare(GET_LABLES_SQL)
+	if err != nil {
+		return results, err
+	}
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return results, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&value, &label, &order, &labelType)
+		if err != nil {
+			log.Fatal(err)
+		}
+		results = append(results, MetadataLabelFromDB{
+			Value:     value,
+			Label:     label,
+			Order:     order,
+			LabelType: labelType,
+		})
+	}
+
+	return results, nil
 }

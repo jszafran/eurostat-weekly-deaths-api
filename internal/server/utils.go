@@ -15,3 +15,11 @@ func WriteJSON(statusCode int, w http.ResponseWriter, data any) error {
 
 	return nil
 }
+
+func WriteJSONError(statusCode int, w http.ResponseWriter, errorMessage string) error {
+	err := WriteJSON(statusCode, w, map[string]string{"error": errorMessage})
+	if err != nil {
+		return err
+	}
+	return nil
+}

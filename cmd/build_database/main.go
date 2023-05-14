@@ -12,17 +12,17 @@ func main() {
 	t1 := time.Now()
 	database, err := db.GetDB()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("creating a database: %s\n", err)
 	}
 
 	err = db.RecreateDB(database)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("recreating database tables: %s\n", err)
 	}
 
 	data, err := eurostat.ReadData()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("reading data from eurostat: %s\n", err)
 	}
 
 	recs, err := eurostat.ParseData(data)
@@ -35,7 +35,7 @@ func main() {
 	var recordsInserted int
 	err = database.QueryRow("select count(*) from weekly_deaths").Scan(&recordsInserted)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("reading inserted records count from db: %s\n", err)
 	}
 
 	timeElapsed := time.Since(t1)

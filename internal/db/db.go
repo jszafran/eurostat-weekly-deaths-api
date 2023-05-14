@@ -84,12 +84,12 @@ func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
 	log.Printf("Recreating %s table.\n", table)
 	_, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table))
 	if err != nil {
-		return err
+		return fmt.Errorf("dropping %s table: %w\n", table, err)
 	}
 
 	_, err = db.Exec(ddlQuery)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating %s table: %w\n", table, err)
 	}
 
 	return nil
@@ -99,22 +99,22 @@ func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
 func RecreateDB(db *sql.DB) error {
 	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL, db)
 	if err != nil {
-		return err
+		return fmt.Errorf("recreating weekly_deaths table: %w\n", err)
 	}
 
 	err = RecreateTable("countries", CREATE_COUNTRIES_SQL, db)
 	if err != nil {
-		return err
+		return fmt.Errorf("recreating countries table: %w\n", err)
 	}
 
 	err = RecreateTable("ages", CREATE_AGES_SQL, db)
 	if err != nil {
-		return err
+		return fmt.Errorf("recreating ages table: %w\n", err)
 	}
 
 	err = RecreateTable("genders", CREATE_GENDERS_SQL, db)
 	if err != nil {
-		return err
+		return fmt.Errorf("recreating genders table: %w\n", err)
 	}
 
 	return nil
@@ -123,7 +123,7 @@ func RecreateDB(db *sql.DB) error {
 func LoadMetadataTable(db *sql.DB, csvPath string, table string) error {
 	labels, err := parseLabelFile(csvPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("parsing labels from csv: %w\n", err)
 	}
 
 	if len(labels) == 0 {
@@ -132,7 +132,7 @@ func LoadMetadataTable(db *sql.DB, csvPath string, table string) error {
 
 	err = InsertLabelValues(db, table, labels)
 	if err != nil {
-		return err
+		return fmt.Errorf("inserting labels for %s table: %w\n", table, err)
 	}
 
 	return nil
@@ -141,17 +141,17 @@ func LoadMetadataTable(db *sql.DB, csvPath string, table string) error {
 func PopulateMetadataTables(db *sql.DB) error {
 	err := LoadMetadataTable(db, "../../resources/ages.csv", "ages")
 	if err != nil {
-		return err
+		return fmt.Errorf("loading metadata from ages.csv: %w\n", err)
 	}
 
 	err = LoadMetadataTable(db, "../../resources/countries.csv", "countries")
 	if err != nil {
-		return err
+		return fmt.Errorf("loading metadata from countries.csv: %w\n", err)
 	}
 
 	err = LoadMetadataTable(db, "../../resources/genders.csv", "genders")
 	if err != nil {
-		return err
+		return fmt.Errorf("loading metadata from genders.csv: %w\n", err)
 	}
 
 	return nil
@@ -160,7 +160,7 @@ func PopulateMetadataTables(db *sql.DB) error {
 func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) error {
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return fmt.Errorf("inserting weekly deaths data - beginning transaction: %w\n", err)
 	}
 	defer tx.Rollback()
 
@@ -169,7 +169,7 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 		VALUES (?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
-		return err
+		return fmt.Errorf("preparing insert statement for weekly deaths: %w", err)
 	}
 
 	defer stmt.Close()
@@ -183,13 +183,22 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 			r.Country,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf(
+				"executing insert for (%d, %d, %v, %s, %s, %s): %w\n",
+				r.Week,
+				r.Year,
+				r.Deaths,
+				r.Age,
+				r.Gender,
+				r.Country,
+				err,
+			)
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return fmt.Errorf("commiting transction for weekly deaths insert: %w\n", err)
 	}
 
 	return nil

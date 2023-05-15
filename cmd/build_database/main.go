@@ -33,10 +33,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = db.PopulateMetadataTables(database)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	var recordsInserted int
 	err = database.QueryRow("select count(*) from weekly_deaths").Scan(&recordsInserted)

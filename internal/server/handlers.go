@@ -68,15 +68,6 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LabelsHandler(w http.ResponseWriter, r *http.Request) {
-	database, err := db.GetDB()
-	if err != nil {
-		WriteJSONError(http.StatusInternalServerError, w, "internal server error")
-		return
-	}
-
-	data, err := db.GetLabels(database)
-	if err != nil {
-		WriteJSONError(http.StatusInternalServerError, w, "internal server error")
-	}
-	WriteJSON(http.StatusOK, w, map[string][]db.MetadataLabelFromDB{"data": data})
+	data := GetLabels()
+	WriteJSON(http.StatusOK, w, map[string][]MetadataLabel{"data": data})
 }

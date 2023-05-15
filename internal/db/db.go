@@ -2,12 +2,9 @@ package db
 
 import (
 	"database/sql"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
-	"strconv"
 	"weekly_deaths/internal/eurostat"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -55,19 +52,6 @@ type WeeklyDeaths struct {
 	Country      string        `json:"country"`
 }
 
-type MetadataLabel struct {
-	Value string
-	Label string
-	Order int
-}
-
-type MetadataLabelFromDB struct {
-	Value     string
-	Label     string
-	Order     int
-	LabelType string
-}
-
 // GetDB prepares a connection to SQLite database.
 func GetDB() (*sql.DB, error) {
 	var db *sql.DB
@@ -100,58 +84,6 @@ func RecreateDB(db *sql.DB) error {
 	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL, db)
 	if err != nil {
 		return fmt.Errorf("recreating weekly_deaths table: %w\n", err)
-	}
-
-	err = RecreateTable("countries", CREATE_COUNTRIES_SQL, db)
-	if err != nil {
-		return fmt.Errorf("recreating countries table: %w\n", err)
-	}
-
-	err = RecreateTable("ages", CREATE_AGES_SQL, db)
-	if err != nil {
-		return fmt.Errorf("recreating ages table: %w\n", err)
-	}
-
-	err = RecreateTable("genders", CREATE_GENDERS_SQL, db)
-	if err != nil {
-		return fmt.Errorf("recreating genders table: %w\n", err)
-	}
-
-	return nil
-}
-
-func LoadMetadataTable(db *sql.DB, csvPath string, table string) error {
-	labels, err := parseLabelFile(csvPath)
-	if err != nil {
-		return fmt.Errorf("parsing labels from csv: %w\n", err)
-	}
-
-	if len(labels) == 0 {
-		log.Fatalf("Labels CSV: no records parsed for %s table.\n", table)
-	}
-
-	err = InsertLabelValues(db, table, labels)
-	if err != nil {
-		return fmt.Errorf("inserting labels for %s table: %w\n", table, err)
-	}
-
-	return nil
-}
-
-func PopulateMetadataTables(db *sql.DB) error {
-	err := LoadMetadataTable(db, "../../resources/ages.csv", "ages")
-	if err != nil {
-		return fmt.Errorf("loading metadata from ages.csv: %w\n", err)
-	}
-
-	err = LoadMetadataTable(db, "../../resources/countries.csv", "countries")
-	if err != nil {
-		return fmt.Errorf("loading metadata from countries.csv: %w\n", err)
-	}
-
-	err = LoadMetadataTable(db, "../../resources/genders.csv", "genders")
-	if err != nil {
-		return fmt.Errorf("loading metadata from genders.csv: %w\n", err)
 	}
 
 	return nil
@@ -246,109 +178,6 @@ func GetCountryData(
 			Age:          age,
 			Gender:       gender,
 			Country:      country,
-		})
-	}
-
-	return results, nil
-}
-
-func parseLabelFile(path string) ([]MetadataLabel, error) {
-	var records []MetadataLabel
-
-	file, err := os.Open(path)
-	if err != nil {
-		return records, nil
-	}
-
-	r := csv.NewReader(file)
-
-	rows, err := r.ReadAll()
-	if err != nil {
-		return records, nil
-	}
-
-	for _, row := range rows[1:] {
-		value := row[0]
-		label := row[1]
-		order, err := strconv.Atoi(row[2])
-		if err != nil {
-			return records, err
-		}
-		records = append(records, MetadataLabel{
-			Value: value,
-			Label: label,
-			Order: order,
-		})
-	}
-
-	return records, nil
-}
-
-func InsertLabelValues(db *sql.DB, table string, labels []MetadataLabel) error {
-	queryMap := map[string]string{
-		"countries": COUNTRY_LABEL_INSERT_SQL,
-		"ages":      AGE_LABEL_INSERT_SQL,
-		"genders":   GENDER_LABEL_INSERT_SQL,
-	}
-
-	query, ok := queryMap[table]
-	if !ok {
-		return fmt.Errorf("no query found for %s table", table)
-	}
-
-	stmt, err := db.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("preparing %s query: %w\n", query, err)
-	}
-
-	for _, l := range labels {
-		_, err = stmt.Exec(l.Value, l.Label, l.Order)
-		if err != nil {
-			return fmt.Errorf(
-				"executing %s query for values (%s, %s, %d): %w\n",
-				query,
-				l.Value,
-				l.Label,
-				l.Order,
-				err,
-			)
-		}
-	}
-
-	log.Printf("%d labels for table %s inserted.", len(labels), table)
-	return nil
-}
-
-func GetLabels(db *sql.DB) ([]MetadataLabelFromDB, error) {
-	var (
-		value     string
-		label     string
-		order     int
-		labelType string
-	)
-	var results []MetadataLabelFromDB
-
-	stmt, err := db.Prepare(GET_LABLES_SQL)
-	if err != nil {
-		return results, fmt.Errorf("preparing %s query: %w\n", GET_LABLES_SQL, err)
-	}
-
-	rows, err := stmt.Query()
-	if err != nil {
-		return results, fmt.Errorf("executing %s query: %w\n", GET_LABLES_SQL, err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		err = rows.Scan(&value, &label, &order, &labelType)
-		if err != nil {
-			log.Fatal(err)
-		}
-		results = append(results, MetadataLabelFromDB{
-			Value:     value,
-			Label:     label,
-			Order:     order,
-			LabelType: labelType,
 		})
 	}
 

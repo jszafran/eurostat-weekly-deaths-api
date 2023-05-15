@@ -11,11 +11,11 @@ const CREATE_WEEKLY_DEATHS_SQL = `
 	) 
 `
 
-const CREATE_COUNTRIES_SQL = `CREATE TABLE countries (value STRING, label STRING, order INTEGER)`
+const CREATE_COUNTRIES_SQL = `CREATE TABLE countries (value STRING, label STRING, "order" INTEGER)`
 
-const CREATE_AGES_SQL = `CREATE TABLE ages (value STRING, label STRING, order INTEGER)`
+const CREATE_AGES_SQL = `CREATE TABLE ages (value STRING, label STRING, "order" INTEGER)`
 
-const CREATE_GENDERS_SQL = `CREATE TABLE genders (value STRING, label STRING, order INTEGER)`
+const CREATE_GENDERS_SQL = `CREATE TABLE genders (value STRING, label STRING, "order" INTEGER)`
 
 const WEEKLY_DEATHS_FOR_COUNTRY = `
 	SELECT
@@ -34,11 +34,11 @@ const WEEKLY_DEATHS_FOR_COUNTRY = `
 	AND year <= ?
 `
 
-const COUNTRY_LABEL_INSERT_SQL = `INSERT INTO countries (value, label, order) VALUES (?, ?, ?)`
+const COUNTRY_LABEL_INSERT_SQL = `INSERT INTO countries (value, label, "order") VALUES (?, ?, ?)`
 
-const GENDER_LABEL_INSERT_SQL = `INSERT INTO genders (value, label, order) VALUES (?, ?, ?)`
+const GENDER_LABEL_INSERT_SQL = `INSERT INTO genders (value, label, "order") VALUES (?, ?, ?)`
 
-const AGE_LABEL_INSERT_SQL = `INSERT INTO ages (value, label, order) VALUES (?, ?, ?)`
+const AGE_LABEL_INSERT_SQL = `INSERT INTO ages (value, label, "order") VALUES (?, ?, ?)`
 
 const GET_LABLES_SQL = `
 	SELECT

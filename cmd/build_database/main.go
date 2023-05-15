@@ -29,8 +29,14 @@ func main() {
 	log.Printf("Parsed %d records.\n", len(recs))
 	log.Println("Starting inserting data into db.")
 
-	db.InsertWeeklyDeathsData(recs, database)
-	db.PopulateMetadataTables(database)
+	err = db.InsertWeeklyDeathsData(recs, database)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.PopulateMetadataTables(database)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var recordsInserted int
 	err = database.QueryRow("select count(*) from weekly_deaths").Scan(&recordsInserted)

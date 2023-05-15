@@ -298,13 +298,20 @@ func InsertLabelValues(db *sql.DB, table string, labels []MetadataLabel) error {
 
 	stmt, err := db.Prepare(query)
 	if err != nil {
-		return err
+		return fmt.Errorf("preparing %s query: %w\n", query, err)
 	}
 
 	for _, l := range labels {
 		_, err = stmt.Exec(l.Value, l.Label, l.Order)
 		if err != nil {
-			return err
+			return fmt.Errorf(
+				"executing %s query for values (%s, %s, %d): %w\n",
+				query,
+				l.Value,
+				l.Label,
+				l.Order,
+				err,
+			)
 		}
 	}
 
@@ -323,12 +330,12 @@ func GetLabels(db *sql.DB) ([]MetadataLabelFromDB, error) {
 
 	stmt, err := db.Prepare(GET_LABLES_SQL)
 	if err != nil {
-		return results, err
+		return results, fmt.Errorf("preparing %s query: %w\n", GET_LABLES_SQL, err)
 	}
 
 	rows, err := stmt.Query()
 	if err != nil {
-		return results, err
+		return results, fmt.Errorf("executing %s query: %w\n", GET_LABLES_SQL, err)
 	}
 	defer rows.Close()
 

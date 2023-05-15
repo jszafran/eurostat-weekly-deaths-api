@@ -75,5 +75,8 @@ func LabelsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, err := db.GetLabels(database)
+	if err != nil {
+		WriteJSONError(http.StatusInternalServerError, w, "internal server error")
+	}
 	WriteJSON(http.StatusOK, w, map[string][]db.MetadataLabelFromDB{"data": data})
 }

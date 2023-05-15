@@ -21,6 +21,6 @@ func main() {
 
 	err := http.ListenAndServe(port, r)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("starting server: %s\n", err.Error())
 	}
 }

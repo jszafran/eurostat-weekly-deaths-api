@@ -3,7 +3,6 @@ package eurostat
 import (
 	"compress/gzip"
 	"database/sql"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -51,17 +50,17 @@ func ReadData() (string, error) {
 	log.Println("Fetching data from Eurostat.")
 	resp, err := http.Get(DATA_URL)
 	if err != nil {
-		return data, err
+		return data, fmt.Errorf("error when calling GET %s: %w\n", DATA_URL, err)
 	}
 
 	gzipBody, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		return data, err
+		return data, fmt.Errorf("opening gzip reader: %w\n", err)
 	}
 
 	tsvData, err := ioutil.ReadAll(gzipBody)
 	if err != nil {
-		return data, err
+		return data, fmt.Errorf("reading gzip body: %w\n", err)
 	}
 
 	log.Println("Data fetched successfully.")
@@ -75,7 +74,7 @@ func WeekOfYearHeaderPositionMap(header string) (map[int]WeekOfYear, error) {
 	for i, v := range strings.Split(header, "\t")[1:] {
 		woy, err := ParseWeekOfYear(v)
 		if err != nil {
-			return m, err
+			return m, fmt.Errorf("parsing week of year for %s: %w\n", v, err)
 		}
 		m[i+1] = woy
 	}
@@ -90,7 +89,7 @@ func ParseMetadata(line string) (Metadata, error) {
 	parts := strings.Split(meta, ",")
 
 	if len(parts) != 4 {
-		return metadata, errors.New("bad line metadata values")
+		return metadata, fmt.Errorf("parsing metadata: bad line metadata values %+v", parts)
 	}
 	return Metadata{
 		Age:     parts[0],
@@ -102,7 +101,8 @@ func ParseMetadata(line string) (Metadata, error) {
 // ParseDeathsValue parses information about reported amount of deaths.
 // If no value was reported (or couldn't successfully parse the information),
 // null value is returned (sql.NullInt64).
-func ParseDeathsValue(v string) sql.NullInt64 {
+func ParseDeathsValue(v string) (sql.NullInt64, error) {
+	var res sql.NullInt64
 	v = strings.Replace(v, "p", "", -1)
 	v = strings.Replace(v, ":", "", -1)
 	v = strings.TrimSpace(v)
@@ -110,12 +110,12 @@ func ParseDeathsValue(v string) sql.NullInt64 {
 	i, err := strconv.Atoi(v)
 	if err != nil {
 		if v != "" {
-			log.Printf("unparsable: %s\n", v)
+			return res, fmt.Errorf("unparsable value %s: %w\n", v, err)
 		}
-		return sql.NullInt64{Valid: false}
+		return sql.NullInt64{Valid: false}, nil
 	}
 
-	return sql.NullInt64{Int64: int64(i), Valid: true}
+	return sql.NullInt64{Int64: int64(i), Valid: true}, nil
 }
 
 // ParseWeekOfYear parses a week of year (WeekOfYear) information from given string.
@@ -128,12 +128,12 @@ func ParseWeekOfYear(s string) (WeekOfYear, error) {
 
 	year, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return woy, fmt.Errorf("bad year value: %s", parts[0])
+		return woy, fmt.Errorf("extracting year value from %s: %w\n", parts[0], err)
 	}
 
 	week, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return woy, fmt.Errorf("bad week value: %s", parts[1])
+		return woy, fmt.Errorf("extracting week value from %s: %w\n", parts[1], err)
 	}
 
 	return WeekOfYear{
@@ -149,14 +149,17 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear) ([]WeeklyDeathsRecord,
 
 	metadata, err := ParseMetadata(line)
 	if err != nil {
-		return wdr, err
+		return wdr, fmt.Errorf("extracting metadata from '%s': %w\n", line, err)
 	}
 
 	data := strings.Split(line, "\t")
 	deaths := data[1:]
 
 	for i, v := range deaths {
-		dv := ParseDeathsValue(v)
+		dv, err := ParseDeathsValue(v)
+		if err != nil {
+			log.Fatalf("parsing deaths value %s: %s", v, err)
+		}
 		woy := woyPosMap[i+1]
 		record := WeeklyDeathsRecord{
 			Week:    woy.Week,
@@ -181,13 +184,13 @@ func ParseData(data string) ([]WeeklyDeathsRecord, error) {
 
 	woyPosMap, err := WeekOfYearHeaderPositionMap(header)
 	if err != nil {
-		return records, err
+		return records, fmt.Errorf("creating week of year header position map: %w\n", err)
 	}
 
-	for _, line := range rows {
+	for i, line := range rows {
 		parsedRecords, err := ParseLine(line, woyPosMap)
 		if err != nil {
-			return records, err
+			return records, fmt.Errorf("parsing line no %d: %w\n", i, err)
 		}
 
 		for _, record := range parsedRecords {

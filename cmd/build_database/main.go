@@ -18,9 +18,9 @@ func main() {
 		log.Fatalf("creating a database: %s\n", err)
 	}
 
-	err = db.RecreateDB()
+	err = db.RecreateWeeklyDeathsTable()
 	if err != nil {
-		log.Fatalf("recreating database tables: %s\n", err)
+		log.Fatalf("recreating weekly_deaths table: %s\n", err)
 	}
 
 	data, err := eurostat.ReadData()
@@ -43,6 +43,18 @@ func main() {
 		log.Fatalf("reading inserted records count from db: %s\n", err)
 	}
 
+	dbix := "idx_weekly_deaths"
+	log.Printf("Recreating %s index.\n", dbix)
+
+	err = db.DropObject(dbix, db.DROP_INDEX_SQL)
+	if err != nil {
+		log.Fatalf("dropping %s index: %s", dbix, err)
+	}
+
+	err = db.CreateObject(dbix, db.CREATE_INDEX_SQL)
+	if err != nil {
+		log.Fatalf("creating %s index: %s", dbix, err)
+	}
 	timeElapsed := time.Since(t1)
 
 	log.Printf("%d records inserted. Time elapsed: %s.\n", recordsInserted, timeElapsed)
@@ -50,5 +62,4 @@ func main() {
 	if recordsInserted != len(recs) {
 		log.Fatalf("%d records were not inserted into weekly_deaths table.", len(recs)-recordsInserted)
 	}
-
 }

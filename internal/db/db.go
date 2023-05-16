@@ -65,27 +65,36 @@ func GetDB() (*sql.DB, error) {
 	return db, err
 }
 
-// Recreate table drops and creates back given table.
-func RecreateTable(table string, ddlQuery string) error {
-	log.Printf("Recreating %s table.\n", table)
-	_, err := DB.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table))
+func CreateObject(objectName string, createQuery string) error {
+	log.Printf("Creating %s object.\n", objectName)
+	_, err := DB.Exec(createQuery)
 	if err != nil {
-		return fmt.Errorf("dropping %s table: %w\n", table, err)
+		return fmt.Errorf("creating %s object: %w\n", objectName, err)
 	}
 
-	_, err = DB.Exec(ddlQuery)
+	return nil
+}
+
+func DropObject(objectName string, dropQuery string) error {
+	log.Printf("Dropping %s object.\n", objectName)
+	_, err := DB.Exec(dropQuery)
 	if err != nil {
-		return fmt.Errorf("creating %s table: %w\n", table, err)
+		return fmt.Errorf("dropping %s object: %w\n", objectName, err)
 	}
 
 	return nil
 }
 
 // RecreateDB drops and creates a weekly_deaths, countries, ages, genders tables.
-func RecreateDB() error {
-	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL)
+func RecreateWeeklyDeathsTable() error {
+	err := DropObject("weekly_deaths", DROP_WEEKLY_DEATHS_SQL)
 	if err != nil {
-		return fmt.Errorf("recreating weekly_deaths table: %w\n", err)
+		return fmt.Errorf("recreating weekly_deaths - dropping table: %w\n", err)
+	}
+
+	err = CreateObject("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL)
+	if err != nil {
+		return fmt.Errorf("recreating weekly_deaths - creating table: %w\n", err)
 	}
 
 	return nil
@@ -155,7 +164,7 @@ func GetCountryData(
 		results []WeeklyDeaths
 	)
 
-	stmt, err := DB.Prepare(WEEKLY_DEATHS_FOR_COUNTRY)
+	stmt, err := DB.Prepare(SELECT_WEEKLY_DEATHS_FOR_COUNTRY)
 	if err != nil {
 		return results, err
 	}

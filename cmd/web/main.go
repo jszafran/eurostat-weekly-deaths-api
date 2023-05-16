@@ -6,12 +6,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"weekly_deaths/internal/db"
 	"weekly_deaths/internal/server"
 )
 
 const port = ":3000"
 
 func main() {
+	var err error
+
+	db.DB, err = db.GetDB()
 	r := chi.NewRouter()
 
 	r.Get("/api/countries", server.CountriesHandler)
@@ -19,7 +23,7 @@ func main() {
 
 	log.Printf("Starting the server on %s port\n", port)
 
-	err := http.ListenAndServe(port, r)
+	err = http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatalf("starting server: %s\n", err.Error())
 	}

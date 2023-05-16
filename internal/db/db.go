@@ -10,6 +10,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var DB *sql.DB
+
 // JsonNullInt64 marshals just the integer value (instead of the Valid/NullInt64 wrapper).
 // Credits: https://stackoverflow.com/questions/33072172/how-can-i-work-with-sql-null-values-and-json-in-a-good-way/33072822#33072822
 type JsonNullInt64 struct {
@@ -64,14 +66,14 @@ func GetDB() (*sql.DB, error) {
 }
 
 // Recreate table drops and creates back given table.
-func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
+func RecreateTable(table string, ddlQuery string) error {
 	log.Printf("Recreating %s table.\n", table)
-	_, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table))
+	_, err := DB.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table))
 	if err != nil {
 		return fmt.Errorf("dropping %s table: %w\n", table, err)
 	}
 
-	_, err = db.Exec(ddlQuery)
+	_, err = DB.Exec(ddlQuery)
 	if err != nil {
 		return fmt.Errorf("creating %s table: %w\n", table, err)
 	}
@@ -80,8 +82,8 @@ func RecreateTable(table string, ddlQuery string, db *sql.DB) error {
 }
 
 // RecreateDB drops and creates a weekly_deaths, countries, ages, genders tables.
-func RecreateDB(db *sql.DB) error {
-	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL, db)
+func RecreateDB() error {
+	err := RecreateTable("weekly_deaths", CREATE_WEEKLY_DEATHS_SQL)
 	if err != nil {
 		return fmt.Errorf("recreating weekly_deaths table: %w\n", err)
 	}
@@ -89,8 +91,8 @@ func RecreateDB(db *sql.DB) error {
 	return nil
 }
 
-func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) error {
-	tx, err := db.Begin()
+func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord) error {
+	tx, err := DB.Begin()
 	if err != nil {
 		return fmt.Errorf("inserting weekly deaths data - beginning transaction: %w\n", err)
 	}
@@ -137,7 +139,6 @@ func InsertWeeklyDeathsData(records []eurostat.WeeklyDeathsRecord, db *sql.DB) e
 }
 
 func GetCountryData(
-	db *sql.DB,
 	countryParam string,
 	genderParam string,
 	ageParam string,
@@ -154,7 +155,7 @@ func GetCountryData(
 		results []WeeklyDeaths
 	)
 
-	stmt, err := db.Prepare(WEEKLY_DEATHS_FOR_COUNTRY)
+	stmt, err := DB.Prepare(WEEKLY_DEATHS_FOR_COUNTRY)
 	if err != nil {
 		return results, err
 	}

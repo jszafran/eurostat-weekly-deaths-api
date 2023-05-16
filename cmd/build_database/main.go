@@ -9,13 +9,16 @@ import (
 )
 
 func main() {
+	var err error
+
 	t1 := time.Now()
-	database, err := db.GetDB()
+
+	db.DB, err = db.GetDB()
 	if err != nil {
 		log.Fatalf("creating a database: %s\n", err)
 	}
 
-	err = db.RecreateDB(database)
+	err = db.RecreateDB()
 	if err != nil {
 		log.Fatalf("recreating database tables: %s\n", err)
 	}
@@ -29,13 +32,13 @@ func main() {
 	log.Printf("Parsed %d records.\n", len(recs))
 	log.Println("Starting inserting data into db.")
 
-	err = db.InsertWeeklyDeathsData(recs, database)
+	err = db.InsertWeeklyDeathsData(recs)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var recordsInserted int
-	err = database.QueryRow("select count(*) from weekly_deaths").Scan(&recordsInserted)
+	err = db.DB.QueryRow("select count(*) from weekly_deaths").Scan(&recordsInserted)
 	if err != nil {
 		log.Fatalf("reading inserted records count from db: %s\n", err)
 	}

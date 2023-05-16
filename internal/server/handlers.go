@@ -49,13 +49,12 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	database, err := db.GetDB()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	weeklyDeaths, err := db.GetCountryData(database, country, gender, age, yearFrom, yearTo)
+	weeklyDeaths, err := db.GetCountryData(country, gender, age, yearFrom, yearTo)
 	if err != nil {
 		WriteJSONError(http.StatusInternalServerError, w, "internal server error")
 		return

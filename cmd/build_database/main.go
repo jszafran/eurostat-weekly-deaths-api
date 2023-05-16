@@ -55,11 +55,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("creating %s index: %s", dbix, err)
 	}
-	timeElapsed := time.Since(t1)
-
-	log.Printf("%d records inserted. Time elapsed: %s.\n", recordsInserted, timeElapsed)
 
 	if recordsInserted != len(recs) {
 		log.Fatalf("%d records were not inserted into weekly_deaths table.", len(recs)-recordsInserted)
 	}
+
+	log.Println("Cleaning incorrect data (week > 53).")
+	_, err = db.DB.Exec(db.DELETE_INCORRECT_WEEKS_DATA_SQL)
+	if err != nil {
+		log.Fatalf("deleting incorrect week data: %s", err)
+	}
+
+	timeElapsed := time.Since(t1)
+	log.Printf("%d records inserted. Time elapsed: %s.\n", recordsInserted, timeElapsed)
 }

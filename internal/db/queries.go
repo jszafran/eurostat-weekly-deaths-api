@@ -36,3 +36,5 @@ const CREATE_INDEX_SQL = `
 `
 
 const DROP_INDEX_SQL = `DROP INDEX IF EXISTS idx_weekly_deaths`
+
+const DELETE_INCORRECT_WEEKS_DATA_SQL = `DELETE FROM weekly_deaths WHERE week > 53`

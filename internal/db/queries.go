@@ -11,7 +11,9 @@ const CREATE_WEEKLY_DEATHS_SQL = `
 	) 
 `
 
-const WEEKLY_DEATHS_FOR_COUNTRY = `
+const DROP_WEEKLY_DEATHS_SQL = `DROP TABLE IF EXISTS weekly_deaths`
+
+const SELECT_WEEKLY_DEATHS_FOR_COUNTRY = `
 	SELECT
 		week,
 		year,
@@ -27,3 +29,10 @@ const WEEKLY_DEATHS_FOR_COUNTRY = `
 	AND year >= ?
 	AND year <= ?
 `
+
+const CREATE_INDEX_SQL = `
+	CREATE INDEX idx_weekly_deaths 
+	ON weekly_deaths (country, gender, age, year)
+`
+
+const DROP_INDEX_SQL = `DROP INDEX IF EXISTS idx_weekly_deaths`

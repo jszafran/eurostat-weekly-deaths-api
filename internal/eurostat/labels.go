@@ -1,4 +1,4 @@
-package server
+package eurostat
 
 type MetadataLabel struct {
 	Value string `json:"value"`

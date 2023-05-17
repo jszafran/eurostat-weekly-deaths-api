@@ -66,6 +66,12 @@ func main() {
 		log.Fatalf("deleting incorrect week data: %s", err)
 	}
 
+	err = eurostat.ValidateLabels(recs)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	timeElapsed := time.Since(t1)
+
 	log.Printf("%d records inserted. Time elapsed: %s.\n", recordsInserted, timeElapsed)
 }

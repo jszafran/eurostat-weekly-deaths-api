@@ -200,3 +200,114 @@ func ParseData(data string) ([]WeeklyDeathsRecord, error) {
 
 	return records, nil
 }
+
+// UniqueValues return unique values for age, gender, country
+// derived from parsed Eurostat data.
+func uniqueValues(data []WeeklyDeathsRecord) map[string][]string {
+	var v interface{}
+	result := make(map[string][]string)
+
+	ages := make(map[string]interface{})
+	genders := make(map[string]interface{})
+	countries := make(map[string]interface{})
+
+	for _, rec := range data {
+		ages[rec.Age] = v
+		genders[rec.Gender] = v
+		countries[rec.Country] = v
+	}
+
+	for k := range ages {
+		result["age"] = append(result["age"], k)
+	}
+
+	for k := range genders {
+		result["gender"] = append(result["gender"], k)
+	}
+
+	for k := range countries {
+		result["country"] = append(result["country"], k)
+	}
+
+	return result
+}
+
+func contains(container []string, value string) bool {
+	for _, el := range container {
+		if value == el {
+			return true
+		}
+	}
+
+	return false
+}
+
+func missingLabels(data []WeeklyDeathsRecord) map[string][]string {
+	res := make(map[string][]string)
+	uv := uniqueValues(data)
+
+	fixedAgeLabels := make([]string, 0)
+	for _, age := range ageLabels {
+		fixedAgeLabels = append(fixedAgeLabels, age.Value)
+	}
+
+	for _, a := range uv["age"] {
+		if !contains(fixedAgeLabels, a) {
+			res["age"] = append(res["age"], a)
+		}
+	}
+
+	fixedCountryLabels := make([]string, 0)
+	for _, country := range countryLabels {
+		fixedCountryLabels = append(fixedCountryLabels, country.Value)
+	}
+
+	for _, c := range uv["country"] {
+		if !contains(fixedCountryLabels, c) {
+			res["country"] = append(res["country"], c)
+		}
+	}
+
+	fixedGenderLabels := make([]string, 0)
+	for _, gender := range genderLabels {
+		fixedGenderLabels = append(fixedGenderLabels, gender.Value)
+	}
+
+	for _, g := range uv["gender"] {
+		if !contains(fixedGenderLabels, g) {
+			res["gender"] = append(res["gender"], g)
+		}
+	}
+
+	return res
+}
+
+// ValidateLabels compares the fixed country, age, gender labels against
+// data fetched from Eurostat. Reports error in case of any discrepancies.
+func ValidateLabels(data []WeeklyDeathsRecord) error {
+	missingDataFound := false
+	ml := missingLabels(data)
+	age, exists := ml["age"]
+	if exists {
+		log.Printf("Missing age labels found: %+v\n", age)
+		missingDataFound = true
+	}
+
+	gender, exists := ml["gender"]
+	if exists {
+		log.Printf("Missing gender labels found: %+v\n", gender)
+		missingDataFound = true
+	}
+
+	country, exists := ml["country"]
+	if exists {
+		log.Printf("Missing country labels found: %+v\n", country)
+		missingDataFound = true
+	}
+
+	if missingDataFound {
+		return fmt.Errorf("found missing labels: %+v\n", ml)
+	}
+
+	return nil
+}

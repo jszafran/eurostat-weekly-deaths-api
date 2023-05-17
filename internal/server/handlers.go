@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"weekly_deaths/internal/db"
+	"weekly_deaths/internal/eurostat"
 )
 
 func CountriesHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +68,6 @@ func CountriesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LabelsHandler(w http.ResponseWriter, r *http.Request) {
-	data := GetLabels()
-	WriteJSON(http.StatusOK, w, map[string][]MetadataLabel{"data": data})
+	data := eurostat.GetLabels()
+	WriteJSON(http.StatusOK, w, map[string][]eurostat.MetadataLabel{"data": data})
 }

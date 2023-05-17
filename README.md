@@ -34,8 +34,7 @@ Example response:
            'gender': 'T',
            'week': 51,
            'weekly_deaths': 11679,
-           'year': 2020},
-           ...
+           'year': 2020}
     ]
 }
 ```
@@ -129,10 +128,8 @@ Response example:
     [
         {"value": "TOTAL", "label": "Total", "order": 1, "type": "age"},
         {"value":"UNK","label":"Unknown","order":2,"type":"age"},
-        ...
         {"value":"FR","label":"France","order":16,"type":"country"},
         {"value":"GE","label":"Georgia","order":17,"type":"country"},
-        ...
         {"value":"T","label":"Total","order":1,"type":"gender"},
         {"value":"F","label":"Female","order":2,"type":"gender"},
         {"value":"M","label":"Male","order":3,"type":"gender"}

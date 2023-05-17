@@ -282,20 +282,32 @@ func missingLabels(data []WeeklyDeathsRecord) map[string][]string {
 	return res
 }
 
-func ValidateLabels(data []WeeklyDeathsRecord) {
+// ValidateLabels compares the fixed country, age, gender labels against
+// data fetched from Eurostat. Reports error in case of any discrepancies.
+func ValidateLabels(data []WeeklyDeathsRecord) error {
+	missingDataFound := false
 	ml := missingLabels(data)
 	age, exists := ml["age"]
 	if exists {
 		log.Printf("Missing age labels found: %+v\n", age)
+		missingDataFound = true
 	}
 
 	gender, exists := ml["gender"]
 	if exists {
 		log.Printf("Missing gender labels found: %+v\n", gender)
+		missingDataFound = true
 	}
 
 	country, exists := ml["country"]
 	if exists {
 		log.Printf("Missing country labels found: %+v\n", country)
+		missingDataFound = true
 	}
+
+	if missingDataFound {
+		return fmt.Errorf("found missing labels: %+v\n", ml)
+	}
+
+	return nil
 }

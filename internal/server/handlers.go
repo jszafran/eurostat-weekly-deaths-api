@@ -9,7 +9,7 @@ import (
 	"weekly_deaths/internal/eurostat"
 )
 
-func CountriesHandler(w http.ResponseWriter, r *http.Request) {
+func WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
 	country := r.URL.Query().Get("country")
 	if country == "" {
 		WriteJSONError(http.StatusBadRequest, w, "country url param required")

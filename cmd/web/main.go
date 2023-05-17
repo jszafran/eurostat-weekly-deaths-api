@@ -18,7 +18,7 @@ func main() {
 	db.DB, err = db.GetDB()
 	r := chi.NewRouter()
 
-	r.Get("/api/countries", server.CountriesHandler)
+	r.Get("/api/weekly_deaths", server.WeeklyDeathsHandler)
 	r.Get("/api/labels", server.LabelsHandler)
 
 	log.Printf("Starting the server on %s port\n", port)

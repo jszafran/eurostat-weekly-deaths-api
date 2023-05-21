@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"weekly_deaths/internal/db"
 	"weekly_deaths/internal/eurostat"
 )
 
@@ -55,13 +54,19 @@ func WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	weeklyDeaths, err := db.GetCountryData(country, gender, age, yearFrom, yearTo)
+	weeklyDeaths, err := eurostat.EurostatDataProvider.GetWeeklyDeaths(
+		country,
+		age,
+		gender,
+		yearFrom,
+		yearTo,
+	)
 	if err != nil {
 		WriteJSONError(http.StatusInternalServerError, w, "internal server error")
 		return
 	}
 
-	data := db.WeeklyDeathsResponse{Data: weeklyDeaths}
+	data := WeeklyDeathsResponse{Gender: gender, Age: age, Country: country, WeeklyDeaths: weeklyDeaths}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(data)

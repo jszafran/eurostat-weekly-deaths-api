@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"weekly_deaths/internal/db"
+	"weekly_deaths/internal/eurostat"
 	"weekly_deaths/internal/server"
 )
 
@@ -15,7 +15,10 @@ const port = ":3000"
 func main() {
 	var err error
 
-	db.DB, err = db.GetDB()
+	eurostat.EurostatDataProvider, err = eurostat.NewDataProvider(eurostat.LiveEurostatDataSource{})
+	if err != nil {
+		log.Fatal(err)
+	}
 	r := chi.NewRouter()
 
 	r.Get("/api/weekly_deaths", server.WeeklyDeathsHandler)

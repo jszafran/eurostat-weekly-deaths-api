@@ -2,7 +2,6 @@ package eurostat
 
 import (
 	"compress/gzip"
-	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -36,15 +35,19 @@ type Metadata struct {
 type WeeklyDeathsRecord struct {
 	Week    int
 	Year    int
-	Deaths  sql.NullInt64
+	Deaths  int
 	Age     string
 	Gender  string
 	Country string
 }
 
-// ReadData makes a HTTP requests to fetch gzipped TSV data from Eurostat website.
-// Returns the TSV data as a string.
-func ReadData() (string, error) {
+type DataSource interface {
+	FetchData() (string, error)
+}
+
+type LiveEurostatDataSource struct{}
+
+func (s LiveEurostatDataSource) FetchData() (string, error) {
 	var data string
 
 	log.Println("Fetching data from Eurostat.")
@@ -101,8 +104,8 @@ func ParseMetadata(line string) (Metadata, error) {
 // ParseDeathsValue parses information about reported amount of deaths.
 // If no value was reported (or couldn't successfully parse the information),
 // null value is returned (sql.NullInt64).
-func ParseDeathsValue(v string) (sql.NullInt64, error) {
-	var res sql.NullInt64
+func ParseDeathsValue(v string) (int, error) {
+	var res int
 	v = strings.Replace(v, "p", "", -1)
 	v = strings.Replace(v, ":", "", -1)
 	v = strings.TrimSpace(v)
@@ -112,10 +115,10 @@ func ParseDeathsValue(v string) (sql.NullInt64, error) {
 		if v != "" {
 			return res, fmt.Errorf("unparsable value %s: %w\n", v, err)
 		}
-		return sql.NullInt64{Valid: false}, nil
+		return -1, nil
 	}
 
-	return sql.NullInt64{Int64: int64(i), Valid: true}, nil
+	return i, nil
 }
 
 // ParseWeekOfYear parses a week of year (WeekOfYear) information from given string.

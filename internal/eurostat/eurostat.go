@@ -191,6 +191,9 @@ func ParseData(data string) ([]WeeklyDeathsRecord, error) {
 	}
 
 	for i, line := range rows {
+		if line == "" {
+			continue
+		}
 		parsedRecords, err := ParseLine(line, woyPosMap)
 		if err != nil {
 			return records, fmt.Errorf("parsing line no %d: %w\n", i, err)

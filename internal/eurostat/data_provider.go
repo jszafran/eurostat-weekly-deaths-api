@@ -17,10 +17,14 @@ type WeeklyDeaths struct {
 	Deaths int `json:"deaths"`
 }
 
+// DataProvider provides weekly deaths data fetched
+// from Eurostat.
 type DataProvider struct {
 	data map[string][]WeeklyDeaths
 }
 
+// MakeKey creates a string key used for storing the data in
+// application's memory (concatenation of country, gender, age and year).
 func MakeKey(country string, gender string, age string, year int) (string, error) {
 	yearStr := strconv.Itoa(year)
 	if len(country) == 0 || len(gender) == 0 || len(age) == 0 || len(yearStr) == 0 {
@@ -29,6 +33,8 @@ func MakeKey(country string, gender string, age string, year int) (string, error
 	return fmt.Sprintf("%s|%d|%s|%s", country, year, age, gender), nil
 }
 
+// NewDataProvider returns a data provider object with
+// data downloaded from provided data source.
 func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 	var dp DataProvider
 
@@ -84,6 +90,8 @@ func makeRange(from int, to int) []int {
 	return rng
 }
 
+// GetWeeklyDeaths returns weekly deaths data for given country,
+// age, gender and year range.
 func (dp *DataProvider) GetWeeklyDeaths(
 	country string,
 	age string,
@@ -91,14 +99,6 @@ func (dp *DataProvider) GetWeeklyDeaths(
 	yearFrom int,
 	yearTo int,
 ) ([]WeeklyDeaths, error) {
-	fmt.Printf(
-		"Requesting data for (%s, %s, %s, %d, %d)\n",
-		country,
-		age,
-		gender,
-		yearFrom,
-		yearTo,
-	)
 	res := make([]WeeklyDeaths, 0)
 
 	years := makeRange(yearFrom, yearTo)
@@ -115,6 +115,5 @@ func (dp *DataProvider) GetWeeklyDeaths(
 		res = append(res, dp.data[key]...)
 	}
 
-	fmt.Printf("Fetched data: %+v", res)
 	return res, nil
 }

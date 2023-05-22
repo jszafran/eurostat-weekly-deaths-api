@@ -55,3 +55,4 @@ eurostat.db
 
 .DS_Store
 
+cmd/private

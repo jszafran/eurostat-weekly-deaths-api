@@ -16,30 +16,29 @@ All parameters (`country`, `gender`, `age`, `year_from`, `year_to`) are **requir
 Example response:
 ```json
 {
-  "data": [
+  "gender": "T",
+  "age": "TOTAL",
+  "country": "PL",
+  "weekly_deaths": [
     {
-      "age": "TOTAL",
-      "country": "PL",
-      "gender": "T",
-      "week": 53,
-      "weekly_deaths": 11775,
-      "year": 2020
+      "week": 1,
+      "year": 2018,
+      "deaths": 8372
     },
     {
-      "age": "TOTAL",
-      "country": "PL",
-      "gender": "T",
-      "week": 52,
-      "weekly_deaths": 12128,
-      "year": 2020
+      "week": 2,
+      "year": 2018,
+      "deaths": 8078
     },
     {
-      "age": "TOTAL",
-      "country": "PL",
-      "gender": "T",
-      "week": 51,
-      "weekly_deaths": 11679,
-      "year": 2020
+      "week": 3,
+      "year": 2018,
+      "deaths": 8639
+    },
+    {
+      "week": 4,
+      "year": 2018,
+      "deaths": 8793
     }
   ]
 }

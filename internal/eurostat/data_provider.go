@@ -5,6 +5,8 @@ import (
 	"log"
 	"sort"
 	"strconv"
+
+	"github.com/DmitriyVTitov/size"
 )
 
 var EurostatDataProvider *DataProvider
@@ -13,9 +15,9 @@ var EurostatDataProvider *DataProvider
 // for given week. Lack of information is represented
 // with -1 value.
 type WeeklyDeaths struct {
-	Week   int `json:"week"`
-	Year   int `json:"year"`
-	Deaths int `json:"deaths"`
+	Week   uint8  `json:"week"`
+	Year   uint16 `json:"year"`
+	Deaths uint32 `json:"deaths"`
 }
 
 // DataProvider provides weekly deaths data fetched
@@ -62,7 +64,7 @@ func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 				row.Year,
 			)
 		}
-		data[key] = append(data[key], WeeklyDeaths{Week: row.Week, Year: row.Year, Deaths: row.Deaths})
+		data[key] = append(data[key], WeeklyDeaths{Week: uint8(row.Week), Year: uint16(row.Year), Deaths: uint32(row.Deaths)})
 	}
 
 	for _, slice := range data {
@@ -70,6 +72,7 @@ func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 	}
 
 	log.Printf("Data provider instantiated (%d keys loaded to memory).\n", len(data))
+	log.Printf("Size of provider data: %d bytes", size.Of(data))
 	return &DataProvider{data}, nil
 }
 

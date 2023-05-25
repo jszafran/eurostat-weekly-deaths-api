@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/DmitriyVTitov/size"
 )
 
 const DATA_URL = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
@@ -65,7 +67,7 @@ func (s LiveEurostatDataSource) FetchData() (string, error) {
 	if err != nil {
 		return data, fmt.Errorf("reading gzip body: %w\n", err)
 	}
-
+	log.Printf("Size of tsv data: %d bytes\n", size.Of(tsvData))
 	log.Println("Data fetched successfully.")
 	return string(tsvData), nil
 }
@@ -103,7 +105,7 @@ func ParseMetadata(line string) (Metadata, error) {
 
 // ParseDeathsValue parses information about reported amount of deaths.
 // If no value was reported (or couldn't successfully parse the information),
-// null value is returned (sql.NullInt64).
+// 0 is returned.
 func ParseDeathsValue(v string) (int, error) {
 	var res int
 	v = strings.Replace(v, "p", "", -1)
@@ -115,7 +117,7 @@ func ParseDeathsValue(v string) (int, error) {
 		if v != "" {
 			return res, fmt.Errorf("unparsable value %s: %w\n", v, err)
 		}
-		return -1, nil
+		return 0, nil
 	}
 
 	return i, nil
@@ -204,6 +206,7 @@ func ParseData(data string) ([]WeeklyDeathsRecord, error) {
 		}
 	}
 
+	log.Printf("Size of parsed records: %d bytes", size.Of(records))
 	return records, nil
 }
 

@@ -2,6 +2,7 @@ package eurostat
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 )
@@ -68,7 +69,7 @@ func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 		sort.Slice(slice, func(i, j int) bool { return slice[i].Week < slice[j].Week })
 	}
 
-	fmt.Printf("Data provider instantiated (%d keys loaded to memory).\n", len(data))
+	log.Printf("Data provider instantiated (%d keys loaded to memory).\n", len(data))
 	return &DataProvider{data}, nil
 }
 

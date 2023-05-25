@@ -5,6 +5,8 @@ import (
 	"log"
 	"sort"
 	"strconv"
+
+	"github.com/DmitriyVTitov/size"
 )
 
 var EurostatDataProvider *DataProvider
@@ -13,9 +15,14 @@ var EurostatDataProvider *DataProvider
 // for given week. Lack of information is represented
 // with -1 value.
 type WeeklyDeaths struct {
-	Week   int `json:"week"`
-	Year   int `json:"year"`
-	Deaths int `json:"deaths"`
+	Week   uint8  `json:"week"`
+	Deaths uint32 `json:"deaths"`
+}
+
+type WeekYearDeaths struct {
+	Week   uint8  `json:"week"`
+	Year   uint16 `json:"year"`
+	Deaths uint32 `json:"deaths"`
 }
 
 // DataProvider provides weekly deaths data fetched
@@ -40,7 +47,6 @@ func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 	var dp DataProvider
 
 	fmt.Println("Instantianting data provider.")
-	data := make(map[string][]WeeklyDeaths)
 	rawData, err := dataSource.FetchData()
 	if err != nil {
 		return &dp, fmt.Errorf("fetching data from source: %w\n", err)
@@ -51,26 +57,13 @@ func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 		return &dp, fmt.Errorf("failed to parse raw data: %w\n", err)
 	}
 
-	for _, row := range parsedData {
-		key, err := MakeKey(row.Country, row.Gender, row.Age, row.Year)
-		if err != nil {
-			return &dp, fmt.Errorf(
-				"creating key from (%s, %s, %s, %d)",
-				row.Country,
-				row.Gender,
-				row.Age,
-				row.Year,
-			)
-		}
-		data[key] = append(data[key], WeeklyDeaths{Week: row.Week, Year: row.Year, Deaths: row.Deaths})
-	}
-
-	for _, slice := range data {
+	for _, slice := range parsedData {
 		sort.Slice(slice, func(i, j int) bool { return slice[i].Week < slice[j].Week })
 	}
 
-	log.Printf("Data provider instantiated (%d keys loaded to memory).\n", len(data))
-	return &DataProvider{data}, nil
+	log.Printf("Data provider instantiated (%d keys loaded to memory).\n", len(parsedData))
+	log.Printf("Size of provider data: %d bytes", size.Of(parsedData))
+	return &DataProvider{parsedData}, nil
 }
 
 func makeRange(from int, to int) []int {
@@ -99,8 +92,8 @@ func (dp *DataProvider) GetWeeklyDeaths(
 	gender string,
 	yearFrom int,
 	yearTo int,
-) ([]WeeklyDeaths, error) {
-	res := make([]WeeklyDeaths, 0)
+) ([]WeekYearDeaths, error) {
+	res := make([]WeekYearDeaths, 0)
 
 	years := makeRange(yearFrom, yearTo)
 	if len(years) == 0 {
@@ -113,7 +106,9 @@ func (dp *DataProvider) GetWeeklyDeaths(
 			return res, fmt.Errorf("fetching data from provider: %w\n", err)
 		}
 
-		res = append(res, dp.data[key]...)
+		for _, r := range dp.data[key] {
+			res = append(res, WeekYearDeaths{Week: r.Week, Deaths: r.Deaths, Year: uint16(year)})
+		}
 	}
 
 	return res, nil

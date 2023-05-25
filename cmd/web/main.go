@@ -16,7 +16,7 @@ func main() {
 	var err error
 	var port int
 
-	flag.IntVar(&port, "port", 3000, "port to start server on")
+	flag.IntVar(&port, "port", 8080, "port to start server on")
 	flag.Parse()
 
 	eurostat.EurostatDataProvider, err = eurostat.NewDataProvider(eurostat.LiveEurostatDataSource{})

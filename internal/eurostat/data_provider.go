@@ -5,9 +5,11 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"time"
 )
 
 var EurostatDataProvider *DataProvider
+var DataDownloadedAt time.Time
 
 // WeeklyDeaths represents a number of deaths reported
 // for given week. Lack of information is represented

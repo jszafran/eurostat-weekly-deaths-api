@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const DATA_URL = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
@@ -66,6 +67,8 @@ func (s LiveEurostatDataSource) FetchData() (string, error) {
 		return data, fmt.Errorf("reading gzip body: %w\n", err)
 	}
 	log.Println("Data fetched successfully.")
+	DataDownloadedAt = time.Now().UTC()
+
 	return string(tsvData), nil
 }
 

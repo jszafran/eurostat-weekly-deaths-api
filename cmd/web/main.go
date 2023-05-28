@@ -27,6 +27,7 @@ func main() {
 
 	r.Get("/api/weekly_deaths", server.WeeklyDeathsHandler)
 	r.Get("/api/labels", server.LabelsHandler)
+	r.Get("/api/info", server.InfoHandler)
 
 	log.Printf("Starting the server on :%d port\n", port)
 

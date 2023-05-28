@@ -4,9 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"weekly_deaths/internal/eurostat"
 )
+
+var Commit = func() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value
+			}
+		}
+	}
+
+	return ""
+}()
 
 func WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
 	country := r.URL.Query().Get("country")
@@ -75,4 +88,11 @@ func WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
 func LabelsHandler(w http.ResponseWriter, r *http.Request) {
 	data := eurostat.GetLabels()
 	WriteJSON(http.StatusOK, w, map[string][]eurostat.MetadataLabel{"data": data})
+}
+
+func InfoHandler(w http.ResponseWriter, r *http.Request) {
+	WriteJSON(http.StatusOK, w, map[string]any{
+		"commit_hash":                      Commit,
+		"data_downloaded_at_utc_timestamp": eurostat.DataDownloadedAt,
+	})
 }

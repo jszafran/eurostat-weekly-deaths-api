@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/DmitriyVTitov/size"
 )
 
 const DATA_URL = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
@@ -67,7 +65,6 @@ func (s LiveEurostatDataSource) FetchData() (string, error) {
 	if err != nil {
 		return data, fmt.Errorf("reading gzip body: %w\n", err)
 	}
-	log.Printf("Size of tsv data: %d bytes\n", size.Of(tsvData))
 	log.Println("Data fetched successfully.")
 	return string(tsvData), nil
 }
@@ -169,6 +166,14 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear, results map[string][]W
 			return fmt.Errorf("failed to create key for %+v metadata and %+v week of year\n", metadata, woy)
 		}
 
+		// Year, according to ISO definitions, contains
+		// 52 or 53 full weeks. Eurostat dataset contains
+		// column with week=99, hence below condition
+		// filtering them out.
+		if woy.Week >= 54 {
+			continue
+		}
+
 		results[key] = append(results[key], WeeklyDeaths{Week: uint8(woy.Week), Deaths: uint32(dv)})
 
 	}
@@ -198,7 +203,6 @@ func ParseData(data string) (map[string][]WeeklyDeaths, error) {
 		}
 	}
 
-	log.Printf("Size of parsed records: %d bytes", size.Of(results))
 	return results, nil
 }
 

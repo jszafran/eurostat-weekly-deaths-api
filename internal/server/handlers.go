@@ -76,3 +76,7 @@ func LabelsHandler(w http.ResponseWriter, r *http.Request) {
 	data := eurostat.GetLabels()
 	WriteJSON(http.StatusOK, w, map[string][]eurostat.MetadataLabel{"data": data})
 }
+
+func SecretHandler(w http.ResponseWriter, r *http.Request) {
+	WriteJSON(http.StatusOK, w, map[string]string{"data": "This is a secret route."})
+}

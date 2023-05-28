@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/DmitriyVTitov/size"
 )
 
 const DATA_URL = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
@@ -65,7 +67,7 @@ func (s LiveEurostatDataSource) FetchData() (string, error) {
 	if err != nil {
 		return data, fmt.Errorf("reading gzip body: %w\n", err)
 	}
-
+	log.Printf("Size of tsv data: %d bytes\n", size.Of(tsvData))
 	log.Println("Data fetched successfully.")
 	return string(tsvData), nil
 }
@@ -103,7 +105,7 @@ func ParseMetadata(line string) (Metadata, error) {
 
 // ParseDeathsValue parses information about reported amount of deaths.
 // If no value was reported (or couldn't successfully parse the information),
-// null value is returned (sql.NullInt64).
+// 0 is returned.
 func ParseDeathsValue(v string) (int, error) {
 	var res int
 	v = strings.Replace(v, "p", "", -1)
@@ -115,7 +117,7 @@ func ParseDeathsValue(v string) (int, error) {
 		if v != "" {
 			return res, fmt.Errorf("unparsable value %s: %w\n", v, err)
 		}
-		return -1, nil
+		return 0, nil
 	}
 
 	return i, nil
@@ -147,12 +149,10 @@ func ParseWeekOfYear(s string) (WeekOfYear, error) {
 
 // ParseLine parses a full line ot TSV record. Returns a slice of WeeklyDeathsRecord
 // or error (if unparsable data occurred).
-func ParseLine(line string, woyPosMap map[int]WeekOfYear) ([]WeeklyDeathsRecord, error) {
-	var wdr []WeeklyDeathsRecord
-
+func ParseLine(line string, woyPosMap map[int]WeekOfYear, results map[string][]WeeklyDeaths) error {
 	metadata, err := ParseMetadata(line)
 	if err != nil {
-		return wdr, fmt.Errorf("extracting metadata from '%s': %w\n", line, err)
+		return fmt.Errorf("extracting metadata from '%s': %w\n", line, err)
 	}
 
 	data := strings.Split(line, "\t")
@@ -164,22 +164,20 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear) ([]WeeklyDeathsRecord,
 			log.Fatalf("parsing deaths value %s: %s", v, err)
 		}
 		woy := woyPosMap[i+1]
-		record := WeeklyDeathsRecord{
-			Week:    woy.Week,
-			Year:    woy.Year,
-			Deaths:  dv,
-			Age:     metadata.Age,
-			Gender:  metadata.Gender,
-			Country: metadata.Country,
+		key, err := MakeKey(metadata.Country, metadata.Gender, metadata.Age, woy.Year)
+		if err != nil {
+			return fmt.Errorf("failed to create key for %+v metadata and %+v week of year\n", metadata, woy)
 		}
-		wdr = append(wdr, record)
+
+		results[key] = append(results[key], WeeklyDeaths{Week: uint8(woy.Week), Deaths: uint32(dv)})
+
 	}
 
-	return wdr, nil
+	return nil
 }
 
-func ParseData(data string) ([]WeeklyDeathsRecord, error) {
-	var records []WeeklyDeathsRecord
+func ParseData(data string) (map[string][]WeeklyDeaths, error) {
+	results := make(map[string][]WeeklyDeaths)
 
 	split := strings.Split(data, "\n")
 	header := split[0]
@@ -187,24 +185,21 @@ func ParseData(data string) ([]WeeklyDeathsRecord, error) {
 
 	woyPosMap, err := WeekOfYearHeaderPositionMap(header)
 	if err != nil {
-		return records, fmt.Errorf("creating week of year header position map: %w\n", err)
+		return nil, fmt.Errorf("creating week of year header position map: %w\n", err)
 	}
 
 	for i, line := range rows {
 		if line == "" {
 			continue
 		}
-		parsedRecords, err := ParseLine(line, woyPosMap)
+		err := ParseLine(line, woyPosMap, results)
 		if err != nil {
-			return records, fmt.Errorf("parsing line no %d: %w\n", i, err)
-		}
-
-		for _, record := range parsedRecords {
-			records = append(records, record)
+			return results, fmt.Errorf("parsing line no %d: %w\n", i, err)
 		}
 	}
 
-	return records, nil
+	log.Printf("Size of parsed records: %d bytes", size.Of(results))
+	return results, nil
 }
 
 // UniqueValues return unique values for age, gender, country

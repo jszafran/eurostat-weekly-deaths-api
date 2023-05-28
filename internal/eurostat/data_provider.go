@@ -5,8 +5,6 @@ import (
 	"log"
 	"sort"
 	"strconv"
-
-	"github.com/DmitriyVTitov/size"
 )
 
 var EurostatDataProvider *DataProvider
@@ -62,7 +60,6 @@ func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 	}
 
 	log.Printf("Data provider instantiated (%d keys loaded to memory).\n", len(parsedData))
-	log.Printf("Size of provider data: %d bytes", size.Of(parsedData))
 	return &DataProvider{parsedData}, nil
 }
 

@@ -4,6 +4,12 @@ Eurostat publishes data for weekly deaths statistics among EU countries (weekly 
 
 This projects downloads this data, loads it from compressed TSV file to sqlite database and exposes it via small HTTP API (written in Golang).
 
+**Try it out live**:
+
+1. [Labels endpoint](https://eurostat-weekly-deaths-api.fly.dev/api/labels)
+2. [Exemplary call for retrieving weekly deaths](https://eurostat-weekly-deaths-api.fly.dev/api/weekly_deaths?country=PL&gender=T&age=TOTAL&year_from=2015&year_to=2023)
+
+
 ## API routes
 
 ### Weekly Deaths

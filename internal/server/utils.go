@@ -8,7 +8,9 @@ import (
 func WriteJSON(statusCode int, w http.ResponseWriter, data any) error {
 	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(data)
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(data)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,41 @@
+output:
+  format: colored-line-number
+
+linters:
+  disable-all: true
+  enable:
+    # Default linters
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+
+    # additional linters
+    - gocyclo
+    - goconst
+    - gofumpt
+    - goimports
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+
+    # optional
+    - bodyclose
+    - goerr113
+    - dupl
+    - errchkjson
+    - gomnd
+    - nakedret
+    - tparallel
+  
+issues:
+  exclude-use-default: false
+
+  exclude-rules:
+    - path: internal/eurostat/labels.go
+      linters:
+        - gomnd

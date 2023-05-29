@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strconv"
+
 	"weekly_deaths/internal/eurostat"
 )
 

@@ -7,7 +7,7 @@ type MetadataLabel struct {
 	Type  string `json:"type"`
 }
 
-var ageLabels []MetadataLabel = []MetadataLabel{
+var ageLabels = []MetadataLabel{
 	{Value: "TOTAL", Label: "Total", Order: 1, Type: "age"},
 	{Value: "UNK", Label: "Unknown", Order: 2, Type: "age"},
 	{Value: "Y_LT5", Label: "<5", Order: 3, Type: "age"},
@@ -31,13 +31,13 @@ var ageLabels []MetadataLabel = []MetadataLabel{
 	{Value: "Y_GE90", Label: ">=90", Order: 21, Type: "age"},
 }
 
-var genderLabels []MetadataLabel = []MetadataLabel{
+var genderLabels = []MetadataLabel{
 	{Value: "T", Label: "Total", Order: 1, Type: "gender"},
 	{Value: "F", Label: "Female", Order: 2, Type: "gender"},
 	{Value: "M", Label: "Male", Order: 3, Type: "gender"},
 }
 
-var countryLabels []MetadataLabel = []MetadataLabel{
+var countryLabels = []MetadataLabel{
 	{Value: "AD", Label: "Andorra", Order: 1, Type: "country"},
 	{Value: "AL", Label: "Albania", Order: 2, Type: "country"},
 	{Value: "AM", Label: "Armenia", Order: 3, Type: "country"},
@@ -83,9 +83,7 @@ func GetLabels() []MetadataLabel {
 	data := [][]MetadataLabel{ageLabels, countryLabels, genderLabels}
 
 	for _, d := range data {
-		for _, label := range d {
-			labels = append(labels, label)
-		}
+		labels = append(labels, d...)
 	}
 
 	return labels

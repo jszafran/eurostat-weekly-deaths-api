@@ -1,3 +1,6 @@
+// Package downloads data from Eurostat and
+// starts HTTP server to expose this data
+// (server listens on 8080 port by default).
 package main
 
 import (

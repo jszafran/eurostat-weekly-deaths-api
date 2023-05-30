@@ -1,3 +1,6 @@
+// Package eurostat takes care of downloading Weekly Deaths
+// data from Eurostat website, parsing it from gzipped TSV
+// and loading to memory (key value store).
 package eurostat
 
 import (

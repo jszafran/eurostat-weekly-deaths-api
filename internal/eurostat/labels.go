@@ -1,5 +1,7 @@
 package eurostat
 
+// MetadataLabel is a represenation of label data
+// that is returned by /api/labels endpoint.
 type MetadataLabel struct {
 	Value string `json:"value"`
 	Label string `json:"label"`
@@ -78,6 +80,8 @@ var countryLabels = []MetadataLabel{
 	{Value: "UK", Label: "United Kingdom", Order: 38, Type: "country"},
 }
 
+// GetLabels returns all static labels (country, age, gender)
+// for data contained within Eurostat Weekly Deaths dataset.
 func GetLabels() []MetadataLabel {
 	labels := make([]MetadataLabel, 0)
 	data := [][]MetadataLabel{ageLabels, countryLabels, genderLabels}

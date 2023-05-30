@@ -12,8 +12,15 @@ import (
 )
 
 const (
-	EurostatDataUrl = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
-	MaxIsoWeekNum   = 53
+	eurostatDataUrl = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
+	maxIsoWeekNum   = 53
+
+	// metadata column should contain 4 elements
+	// after splitting by coma
+	metadataElementsLength = 4
+	// week year value should contain 2 elements
+	// after splitting by W character
+	weekYearElementsLength = 2
 )
 
 // WeekOfYear represents a single week of year (ISO week).
@@ -55,11 +62,11 @@ func (s LiveEurostatDataSource) FetchData() (string, error) {
 	var data string
 
 	log.Println("Fetching data from Eurostat.")
-	resp, err := http.Get(EurostatDataUrl)
+	resp, err := http.Get(eurostatDataUrl)
 	if err != nil {
-		return data, fmt.Errorf("error when calling GET %s: %w", EurostatDataUrl, err)
+		return data, fmt.Errorf("error when calling GET %s: %w", eurostatDataUrl, err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint
 
 	gzipBody, err := gzip.NewReader(resp.Body)
 	if err != nil {
@@ -97,7 +104,7 @@ func ParseMetadata(line string) (Metadata, error) {
 	meta := strings.Split(line, "\t")[0]
 	parts := strings.Split(meta, ",")
 
-	if len(parts) != 4 {
+	if len(parts) != metadataElementsLength {
 		return metadata, fmt.Errorf("parsing metadata: bad line metadata values %+v", parts)
 	}
 	return Metadata{
@@ -131,7 +138,8 @@ func ParseDeathsValue(v string) (int, error) {
 func ParseWeekOfYear(s string) (WeekOfYear, error) {
 	var woy WeekOfYear
 	parts := strings.Split(strings.TrimSpace(s), "W")
-	if len(parts) != 2 {
+
+	if len(parts) != weekYearElementsLength {
 		return woy, fmt.Errorf("bad week of year value: %s", s)
 	}
 
@@ -177,7 +185,7 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear, results map[string][]W
 		// 52 or 53 full weeks. Eurostat dataset contains
 		// column with week=99, hence below condition
 		// filtering them out.
-		if woy.Week >= MaxIsoWeekNum {
+		if woy.Week >= maxIsoWeekNum {
 			continue
 		}
 

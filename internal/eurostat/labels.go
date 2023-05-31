@@ -1,5 +1,7 @@
 package eurostat
 
+// MetadataLabel is a represenation of label data
+// that is returned by /api/labels endpoint.
 type MetadataLabel struct {
 	Value string `json:"value"`
 	Label string `json:"label"`
@@ -7,7 +9,7 @@ type MetadataLabel struct {
 	Type  string `json:"type"`
 }
 
-var ageLabels []MetadataLabel = []MetadataLabel{
+var ageLabels = []MetadataLabel{
 	{Value: "TOTAL", Label: "Total", Order: 1, Type: "age"},
 	{Value: "UNK", Label: "Unknown", Order: 2, Type: "age"},
 	{Value: "Y_LT5", Label: "<5", Order: 3, Type: "age"},
@@ -31,13 +33,13 @@ var ageLabels []MetadataLabel = []MetadataLabel{
 	{Value: "Y_GE90", Label: ">=90", Order: 21, Type: "age"},
 }
 
-var genderLabels []MetadataLabel = []MetadataLabel{
+var genderLabels = []MetadataLabel{
 	{Value: "T", Label: "Total", Order: 1, Type: "gender"},
 	{Value: "F", Label: "Female", Order: 2, Type: "gender"},
 	{Value: "M", Label: "Male", Order: 3, Type: "gender"},
 }
 
-var countryLabels []MetadataLabel = []MetadataLabel{
+var countryLabels = []MetadataLabel{
 	{Value: "AD", Label: "Andorra", Order: 1, Type: "country"},
 	{Value: "AL", Label: "Albania", Order: 2, Type: "country"},
 	{Value: "AM", Label: "Armenia", Order: 3, Type: "country"},
@@ -78,14 +80,14 @@ var countryLabels []MetadataLabel = []MetadataLabel{
 	{Value: "UK", Label: "United Kingdom", Order: 38, Type: "country"},
 }
 
+// GetLabels returns all static labels (country, age, gender)
+// for data contained within Eurostat Weekly Deaths dataset.
 func GetLabels() []MetadataLabel {
 	labels := make([]MetadataLabel, 0)
 	data := [][]MetadataLabel{ageLabels, countryLabels, genderLabels}
 
 	for _, d := range data {
-		for _, label := range d {
-			labels = append(labels, label)
-		}
+		labels = append(labels, d...)
 	}
 
 	return labels

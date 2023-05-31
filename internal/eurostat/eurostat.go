@@ -3,7 +3,7 @@ package eurostat
 import (
 	"compress/gzip"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,7 +11,17 @@ import (
 	"time"
 )
 
-const DATA_URL = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
+const (
+	eurostatDataUrl = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
+	maxIsoWeekNum   = 53
+
+	// metadata column should contain 4 elements
+	// after splitting by coma
+	metadataElementsLength = 4
+	// week year value should contain 2 elements
+	// after splitting by W character
+	weekYearElementsLength = 2
+)
 
 // WeekOfYear represents a single week of year (ISO week).
 type WeekOfYear struct {
@@ -52,19 +62,20 @@ func (s LiveEurostatDataSource) FetchData() (string, error) {
 	var data string
 
 	log.Println("Fetching data from Eurostat.")
-	resp, err := http.Get(DATA_URL)
+	resp, err := http.Get(eurostatDataUrl)
 	if err != nil {
-		return data, fmt.Errorf("error when calling GET %s: %w\n", DATA_URL, err)
+		return data, fmt.Errorf("error when calling GET %s: %w", eurostatDataUrl, err)
 	}
+	defer resp.Body.Close() // nolint
 
 	gzipBody, err := gzip.NewReader(resp.Body)
 	if err != nil {
-		return data, fmt.Errorf("opening gzip reader: %w\n", err)
+		return data, fmt.Errorf("opening gzip reader: %w", err)
 	}
 
-	tsvData, err := ioutil.ReadAll(gzipBody)
+	tsvData, err := io.ReadAll(gzipBody)
 	if err != nil {
-		return data, fmt.Errorf("reading gzip body: %w\n", err)
+		return data, fmt.Errorf("reading gzip body: %w", err)
 	}
 	log.Println("Data fetched successfully.")
 	DataDownloadedAt = time.Now().UTC()
@@ -79,7 +90,7 @@ func WeekOfYearHeaderPositionMap(header string) (map[int]WeekOfYear, error) {
 	for i, v := range strings.Split(header, "\t")[1:] {
 		woy, err := ParseWeekOfYear(v)
 		if err != nil {
-			return m, fmt.Errorf("parsing week of year for %s: %w\n", v, err)
+			return m, fmt.Errorf("parsing week of year for %s: %w", v, err)
 		}
 		m[i+1] = woy
 	}
@@ -93,7 +104,7 @@ func ParseMetadata(line string) (Metadata, error) {
 	meta := strings.Split(line, "\t")[0]
 	parts := strings.Split(meta, ",")
 
-	if len(parts) != 4 {
+	if len(parts) != metadataElementsLength {
 		return metadata, fmt.Errorf("parsing metadata: bad line metadata values %+v", parts)
 	}
 	return Metadata{
@@ -115,7 +126,7 @@ func ParseDeathsValue(v string) (int, error) {
 	i, err := strconv.Atoi(v)
 	if err != nil {
 		if v != "" {
-			return res, fmt.Errorf("unparsable value %s: %w\n", v, err)
+			return res, fmt.Errorf("unparsable value %s: %w", v, err)
 		}
 		return 0, nil
 	}
@@ -127,18 +138,19 @@ func ParseDeathsValue(v string) (int, error) {
 func ParseWeekOfYear(s string) (WeekOfYear, error) {
 	var woy WeekOfYear
 	parts := strings.Split(strings.TrimSpace(s), "W")
-	if len(parts) != 2 {
+
+	if len(parts) != weekYearElementsLength {
 		return woy, fmt.Errorf("bad week of year value: %s", s)
 	}
 
 	year, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return woy, fmt.Errorf("extracting year value from %s: %w\n", parts[0], err)
+		return woy, fmt.Errorf("extracting year value from %s: %w", parts[0], err)
 	}
 
 	week, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return woy, fmt.Errorf("extracting week value from %s: %w\n", parts[1], err)
+		return woy, fmt.Errorf("extracting week value from %s: %w", parts[1], err)
 	}
 
 	return WeekOfYear{
@@ -152,7 +164,7 @@ func ParseWeekOfYear(s string) (WeekOfYear, error) {
 func ParseLine(line string, woyPosMap map[int]WeekOfYear, results map[string][]WeeklyDeaths) error {
 	metadata, err := ParseMetadata(line)
 	if err != nil {
-		return fmt.Errorf("extracting metadata from '%s': %w\n", line, err)
+		return fmt.Errorf("extracting metadata from '%s': %w", line, err)
 	}
 
 	data := strings.Split(line, "\t")
@@ -166,14 +178,14 @@ func ParseLine(line string, woyPosMap map[int]WeekOfYear, results map[string][]W
 		woy := woyPosMap[i+1]
 		key, err := MakeKey(metadata.Country, metadata.Gender, metadata.Age, woy.Year)
 		if err != nil {
-			return fmt.Errorf("failed to create key for %+v metadata and %+v week of year\n", metadata, woy)
+			return fmt.Errorf("failed to create key for %+v metadata and %+v week of year", metadata, woy)
 		}
 
 		// Year, according to ISO definitions, contains
 		// 52 or 53 full weeks. Eurostat dataset contains
 		// column with week=99, hence below condition
 		// filtering them out.
-		if woy.Week >= 54 {
+		if woy.Week >= maxIsoWeekNum {
 			continue
 		}
 
@@ -193,7 +205,7 @@ func ParseData(data string) (map[string][]WeeklyDeaths, error) {
 
 	woyPosMap, err := WeekOfYearHeaderPositionMap(header)
 	if err != nil {
-		return nil, fmt.Errorf("creating week of year header position map: %w\n", err)
+		return nil, fmt.Errorf("creating week of year header position map: %w", err)
 	}
 
 	for i, line := range rows {
@@ -202,7 +214,7 @@ func ParseData(data string) (map[string][]WeeklyDeaths, error) {
 		}
 		err := ParseLine(line, woyPosMap, results)
 		if err != nil {
-			return results, fmt.Errorf("parsing line no %d: %w\n", i, err)
+			return results, fmt.Errorf("parsing line no %d: %w", i, err)
 		}
 	}
 
@@ -314,7 +326,7 @@ func ValidateLabels(data []WeeklyDeathsRecord) error {
 	}
 
 	if missingDataFound {
-		return fmt.Errorf("found missing labels: %+v\n", ml)
+		return fmt.Errorf("found missing labels: %+v", ml)
 	}
 
 	return nil

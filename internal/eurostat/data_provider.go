@@ -1,6 +1,10 @@
+// Package eurostat takes care of downloading Weekly Deaths
+// data from Eurostat website, parsing it from gzipped TSV
+// and loading to memory (key value store).
 package eurostat
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -8,8 +12,10 @@ import (
 	"time"
 )
 
-var EurostatDataProvider *DataProvider
-var DataDownloadedAt time.Time
+var (
+	EurostatDataProvider *DataProvider
+	DataDownloadedAt     time.Time
+)
 
 // WeeklyDeaths represents a number of deaths reported
 // for given week. Lack of information is represented
@@ -36,7 +42,7 @@ type DataProvider struct {
 func MakeKey(country string, gender string, age string, year int) (string, error) {
 	yearStr := strconv.Itoa(year)
 	if len(country) == 0 || len(gender) == 0 || len(age) == 0 || len(yearStr) == 0 {
-		return "", fmt.Errorf("key cannot consist of empty string")
+		return "", errors.New("key cannot consist of empty string")
 	}
 	return fmt.Sprintf("%s|%d|%s|%s", country, year, age, gender), nil
 }
@@ -49,12 +55,12 @@ func NewDataProvider(dataSource DataSource) (*DataProvider, error) {
 	fmt.Println("Instantianting data provider.")
 	rawData, err := dataSource.FetchData()
 	if err != nil {
-		return &dp, fmt.Errorf("fetching data from source: %w\n", err)
+		return &dp, fmt.Errorf("fetching data from source: %w", err)
 	}
 
 	parsedData, err := ParseData(rawData)
 	if err != nil {
-		return &dp, fmt.Errorf("failed to parse raw data: %w\n", err)
+		return &dp, fmt.Errorf("failed to parse raw data: %w", err)
 	}
 
 	for _, slice := range parsedData {
@@ -102,7 +108,7 @@ func (dp *DataProvider) GetWeeklyDeaths(
 	for _, year := range years {
 		key, err := MakeKey(country, gender, age, year)
 		if err != nil {
-			return res, fmt.Errorf("fetching data from provider: %w\n", err)
+			return res, fmt.Errorf("fetching data from provider: %w", err)
 		}
 
 		for _, r := range dp.data[key] {

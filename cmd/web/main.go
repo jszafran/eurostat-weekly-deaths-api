@@ -1,3 +1,6 @@
+// Package downloads data from Eurostat and
+// starts HTTP server to expose this data
+// (server listens on 8080 port by default).
 package main
 
 import (
@@ -12,11 +15,14 @@ import (
 	"weekly_deaths/internal/server"
 )
 
+// DefaultPort defines a default port that the server will be started on.
+const DefaultPort = 8080
+
 func main() {
 	var err error
 	var port int
 
-	flag.IntVar(&port, "port", 8080, "port to start server on")
+	flag.IntVar(&port, "port", DefaultPort, "port to start server on")
 	flag.Parse()
 
 	eurostat.EurostatDataProvider, err = eurostat.NewDataProvider(eurostat.LiveEurostatDataSource{})

@@ -6,9 +6,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strconv"
-	"time"
-
-	"weekly_deaths/internal/eurostat"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -26,11 +23,6 @@ var Commit = func() string {
 
 	return ""
 }()
-
-type application struct {
-	dataProvider     *eurostat.DataProvider
-	dataDownloadedAt time.Time
-}
 
 func (app *application) routes() *chi.Mux {
 	router := chi.NewRouter()

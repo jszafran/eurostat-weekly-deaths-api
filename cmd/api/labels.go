@@ -1,13 +1,4 @@
-package eurostat
-
-// MetadataLabel is a represenation of label data
-// that is returned by /api/labels endpoint.
-type MetadataLabel struct {
-	Value string `json:"value"`
-	Label string `json:"label"`
-	Order int    `json:"order"`
-	Type  string `json:"type"`
-}
+package main
 
 var ageLabels = []MetadataLabel{
 	{Value: "TOTAL", Label: "Total", Order: 1, Type: "age"},

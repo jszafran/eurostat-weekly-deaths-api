@@ -12,10 +12,7 @@ import (
 	"time"
 )
 
-var (
-	EurostatDataProvider *DataProvider
-	DataDownloadedAt     time.Time
-)
+var DataDownloadedAt time.Time
 
 // WeeklyDeaths represents a number of deaths reported
 // for given week. Lack of information is represented

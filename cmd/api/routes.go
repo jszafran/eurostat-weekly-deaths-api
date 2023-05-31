@@ -1,6 +1,4 @@
-// Package server contains all code related to creating
-// HTTP server and serving Eurostat data through a simple API.
-package server
+package main
 
 import (
 	"encoding/json"
@@ -8,8 +6,11 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strconv"
+	"time"
 
 	"weekly_deaths/internal/eurostat"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // Commit variable stores an information about
@@ -26,6 +27,21 @@ var Commit = func() string {
 	return ""
 }()
 
+type application struct {
+	dataProvider     *eurostat.DataProvider
+	dataDownloadedAt time.Time
+}
+
+func (app *application) routes() *chi.Mux {
+	router := chi.NewRouter()
+
+	router.Get("/api/weekly_deaths", app.weeklyDeathsHandler)
+	router.Get("/api/labels", app.labelsHandler)
+	router.Get("/api/info", app.infoHandler)
+
+	return router
+}
+
 // WeeklyDeathsHandler is a HTTP handler func exposing
 // Eurostat weekly deaths data for given parameters:
 // - country
@@ -34,7 +50,7 @@ var Commit = func() string {
 // - year_from
 // - year_to
 // All parameters are required and should be passed as query params.
-func WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) weeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
 	country := r.URL.Query().Get("country")
 	if country == "" {
 		writeJSONError(http.StatusBadRequest, w, "country url param required")
@@ -80,7 +96,7 @@ func WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	weeklyDeaths, err := eurostat.EurostatDataProvider.GetWeeklyDeaths(
+	weeklyDeaths, err := app.dataProvider.GetWeeklyDeaths(
 		country,
 		age,
 		gender,
@@ -100,17 +116,17 @@ func WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
 
 // LabelsHandler is an HTTP handler returning labels translation
 // for countries, genders and age groups used in weekly deaths dataset.
-func LabelsHandler(w http.ResponseWriter, r *http.Request) {
-	data := eurostat.GetLabels()
-	writeJSON(http.StatusOK, w, map[string][]eurostat.MetadataLabel{"data": data})
+func (app *application) labelsHandler(w http.ResponseWriter, r *http.Request) {
+	data := GetLabels()
+	writeJSON(http.StatusOK, w, map[string][]MetadataLabel{"data": data})
 }
 
 // InfoHandler is an HTTP handler returnign metadata about the application:
 // - the commit from which currently running istance was built
 // - timestamp indicating when the data was downloaded from Eurostat
-func InfoHandler(w http.ResponseWriter, r *http.Request) {
-	writeJSON(http.StatusOK, w, map[string]any{
-		"commit_hash":                      Commit,
-		"data_downloaded_at_utc_timestamp": eurostat.DataDownloadedAt,
+func (app *application) infoHandler(w http.ResponseWriter, r *http.Request) {
+	writeJSON(http.StatusOK, w, InfoResponse{
+		CommitHash:       Commit,
+		DataDownloadedAt: app.dataDownloadedAt,
 	})
 }

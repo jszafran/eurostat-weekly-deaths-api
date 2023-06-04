@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strconv"
-	"time"
 
 	"weekly_deaths/internal/eurostat"
 
@@ -28,8 +27,7 @@ var Commit = func() string {
 }()
 
 type application struct {
-	dataProvider     *eurostat.DataProvider
-	dataDownloadedAt time.Time
+	db *eurostat.InMemoryDB
 }
 
 func (app *application) routes() *chi.Mux {
@@ -38,6 +36,7 @@ func (app *application) routes() *chi.Mux {
 	router.Get("/api/weekly_deaths", app.weeklyDeathsHandler)
 	router.Get("/api/labels", app.labelsHandler)
 	router.Get("/api/info", app.infoHandler)
+	router.Post("/api/update_data", app.updateDataHandler)
 
 	return router
 }
@@ -96,7 +95,7 @@ func (app *application) weeklyDeathsHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	weeklyDeaths, err := app.dataProvider.GetWeeklyDeaths(
+	weeklyDeaths, err := app.db.GetWeeklyDeaths(
 		country,
 		age,
 		gender,
@@ -127,6 +126,17 @@ func (app *application) labelsHandler(w http.ResponseWriter, r *http.Request) {
 func (app *application) infoHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(http.StatusOK, w, InfoResponse{
 		CommitHash:       Commit,
-		DataDownloadedAt: app.dataDownloadedAt,
+		DataDownloadedAt: app.db.Timestamp(),
 	})
+}
+
+func (app *application) updateDataHandler(w http.ResponseWriter, r *http.Request) {
+	snapshot, err := eurostat.DataSnapshotFromEurostat()
+	if err != nil {
+		writeJSONError(http.StatusInternalServerError, w, fmt.Sprintf("Fetching data from Eurostat failed: %s", err))
+	}
+
+	app.db.LoadSnapshot(snapshot)
+	msg := fmt.Sprintf("Successfully loaded snapshot for %s.", snapshot.Timestamp)
+	writeJSON(http.StatusOK, w, map[string]string{"message": msg})
 }

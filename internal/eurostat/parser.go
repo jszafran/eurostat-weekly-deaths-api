@@ -8,8 +8,7 @@ import (
 )
 
 const (
-	eurostatDataUrl = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
-	maxIsoWeekNum   = 53
+	maxIsoWeekNum = 53
 
 	// metadata column should contain 4 elements
 	// after splitting by coma
@@ -36,13 +35,14 @@ type metadata struct {
 // where key is a combination of country, age, gender and year values
 // and value is a slice of WeeklyDeaths struct.
 func ParseData(data string) (map[string][]WeeklyDeaths, error) {
+	log.Println("Starting parsing data.")
 	results := make(map[string][]WeeklyDeaths)
 
 	split := strings.Split(data, "\n")
 	header := split[0]
 	rows := split[1:]
 
-	woyPosMap, err := WeekOfYearHeaderPositionMap(header)
+	woyPosMap, err := weekOfYearHeaderPositionMap(header)
 	if err != nil {
 		return nil, fmt.Errorf("creating week of year header position map: %w", err)
 	}
@@ -51,12 +51,13 @@ func ParseData(data string) (map[string][]WeeklyDeaths, error) {
 		if line == "" {
 			continue
 		}
-		err := ParseLine(line, woyPosMap, results)
+		err := parseLine(line, woyPosMap, results)
 		if err != nil {
 			return results, fmt.Errorf("parsing line no %d: %w", i, err)
 		}
 	}
 
+	log.Println("Parsing finished.")
 	return results, nil
 }
 
@@ -147,7 +148,7 @@ func parseLine(line string, woyPosMap map[int]weekOfYear, results map[string][]W
 			log.Fatalf("parsing deaths value %s: %s", v, err)
 		}
 		woy := woyPosMap[i+1]
-		key, err := MakeKey(metadata.Country, metadata.Gender, metadata.Age, woy.Year)
+		key, err := makeKey(metadata.Country, metadata.Gender, metadata.Age, woy.Year)
 		if err != nil {
 			return fmt.Errorf("failed to create key for %+v metadata and %+v week of year", metadata, woy)
 		}

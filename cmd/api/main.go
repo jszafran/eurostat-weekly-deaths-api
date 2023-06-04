@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"weekly_deaths/internal/eurostat"
 )
@@ -20,14 +19,21 @@ func main() {
 	flag.IntVar(&port, "port", DefaultPort, "port to start server on")
 	flag.Parse()
 
-	dp, err := eurostat.NewDataProvider(eurostat.LiveEurostatDataSource{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	snapshot, err := eurostat.DataSnapshotFromPath("../../snapshots/20230604T114323.tsv.gz")
+	if err != nil {
+		log.Fatal(err)
+	}
+	db := eurostat.DBFromSnapshot(snapshot)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	app := application{
-		dataProvider:     dp,
-		dataDownloadedAt: time.Now(),
+		db: db,
 	}
 
 	router := app.routes()

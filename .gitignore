@@ -56,3 +56,8 @@ eurostat.db
 .DS_Store
 
 cmd/private
+
+bin
+snapshots
+.env
+*.env.*

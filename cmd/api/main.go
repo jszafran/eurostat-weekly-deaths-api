@@ -14,6 +14,12 @@ import (
 // DefaultPort defines a default port that the server will be started on.
 const DefaultPort = 8080
 
+type application struct {
+	port             int
+	dataProvider     *eurostat.DataProvider
+	dataDownloadedAt time.Time
+}
+
 func main() {
 	var port int
 

@@ -3,6 +3,7 @@ package eurostat
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -16,6 +17,8 @@ const (
 	// week year value should contain 2 elements
 	// after splitting by W character
 	weekYearElementsLength = 2
+
+	tabulator = string(rune(0x09))
 )
 
 // WeekOfYear represents a single week of year (ISO week).
@@ -108,7 +111,7 @@ func parseDeathsValue(v string) (int, error) {
 func parseMetadata(line string) (Metadata, error) {
 	var metadata Metadata
 
-	meta := strings.Split(line, "\t")[0]
+	meta := strings.Split(line, tabulator)[0]
 	parts := strings.Split(meta, ",")
 
 	if len(parts) != metadataElementsLength {
@@ -123,7 +126,7 @@ func parseMetadata(line string) (Metadata, error) {
 
 func weekOfYearHeaderPositionMap(header string) (map[int]weekOfYear, error) {
 	m := make(map[int]weekOfYear)
-	for i, v := range strings.Split(header, "\t")[1:] {
+	for i, v := range strings.Split(header, tabulator)[1:] {
 		woy, err := parseWeekOfYear(v)
 		if err != nil {
 			return m, fmt.Errorf("parsing week of year for %s: %w", v, err)
@@ -139,7 +142,7 @@ func parseLine(line string, woyPosMap map[int]weekOfYear, results map[string][]W
 		return fmt.Errorf("extracting metadata from '%s': %w", line, err)
 	}
 
-	data := strings.Split(line, "\t")
+	data := strings.Split(line, tabulator)
 	deaths := data[1:]
 
 	for i, v := range deaths {
@@ -162,6 +165,10 @@ func parseLine(line string, woyPosMap map[int]weekOfYear, results map[string][]W
 		}
 
 		results[key] = append(results[key], WeeklyDeaths{Week: uint8(woy.Week), Deaths: uint32(dv)})
+
+		sort.Slice(results[key], func(i, j int) bool {
+			return results[key][i].Week < results[key][j].Week
+		})
 
 	}
 

@@ -14,7 +14,11 @@ import (
 	"time"
 )
 
-const eurostatDataUrl = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
+const (
+	eurostatDataUrl = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
+
+	timestampLayout = "20060102T150405"
+)
 
 // WeeklyDeaths represents a number of deaths reported
 // for given week. Lack of information is represented
@@ -113,7 +117,7 @@ func timestampFromFileName(filePath string) (time.Time, error) {
 
 	filePath = path.Base(filePath)
 	filePath = strings.Replace(filePath, ".tsv.gz", "", -1)
-	ts, err := time.Parse("20060102T150405", filePath)
+	ts, err := time.Parse(timestampLayout, filePath)
 	if err != nil {
 		return ts, err
 	}

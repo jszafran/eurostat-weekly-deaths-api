@@ -3,3 +3,6 @@ build:
 
 run:
 	go run cmd/api/*.go
+
+test:
+	go test ./...

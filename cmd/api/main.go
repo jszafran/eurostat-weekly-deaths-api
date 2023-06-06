@@ -7,23 +7,25 @@ import (
 	"net/http"
 
 	"weekly_deaths/internal/eurostat"
+
+	"github.com/joho/godotenv"
 )
 
 // DefaultPort defines a default port that the server will be started on.
 const DefaultPort = 8080
 
 func main() {
-	var err error
 	var port int
 
 	flag.IntVar(&port, "port", DefaultPort, "port to start server on")
 	flag.Parse()
 
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(".env file not found.")
 	}
 
-	snapshot, err := eurostat.DataSnapshotFromPath("../../snapshots/20230604T114323.tsv.gz")
+	snapshot, err := eurostat.DataSnapshotFromPath("snapshots/20230604T114323.tsv.gz")
 	if err != nil {
 		log.Fatal(err)
 	}

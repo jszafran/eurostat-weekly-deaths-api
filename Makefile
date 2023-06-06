@@ -6,3 +6,6 @@ run:
 
 test:
 	go test ./...
+
+testverbose:
+	go test -v ./...

@@ -28,3 +28,7 @@ func TestTimestampFromFilename(t *testing.T) {
 		}
 	}
 }
+
+func TestFoo(t *testing.T) {
+	t.Fatal("Just testing the remote pipeline")
+}

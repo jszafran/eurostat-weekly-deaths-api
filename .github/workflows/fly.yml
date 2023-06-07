@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - master
-      - run_tests_in_cicd
     paths:
       - "cmd/**"
       - "internal/**"
       - "fly.toml"
       - .github/workflows/fly.yml
+
 jobs:
   test:
     name: Run tests

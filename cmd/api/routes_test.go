@@ -14,6 +14,8 @@ import (
 	"weekly_deaths/internal/eurostat"
 )
 
+const expectedContentType = "application/json"
+
 func testTimestamp() time.Time {
 	return time.Date(2021, 1, 12, 10, 23, 11, 0, time.UTC)
 }
@@ -79,6 +81,10 @@ func TestInfoHandler(t *testing.T) {
 	if body := strings.TrimSuffix(rr.Body.String(), "\n"); body != expectedBody {
 		t.Errorf("handler returned unexpected body: got %s want %s", body, expectedBody)
 	}
+
+	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+		t.Errorf("handler returned unexpected content-type: got %s want %s", contentType, expectedContentType)
+	}
 }
 
 func TestWeeklyDeathsHandlerWithIncorrectYearRange(t *testing.T) {
@@ -101,6 +107,10 @@ func TestWeeklyDeathsHandlerWithIncorrectYearRange(t *testing.T) {
 
 	if len(resp.WeeklyDeaths) > 0 {
 		t.Errorf("handler returned unexpected body (non-empty slice): %+v\n", resp.WeeklyDeaths)
+	}
+
+	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+		t.Errorf("handler returned unexpected content-type: got %s want %s", contentType, expectedContentType)
 	}
 }
 
@@ -132,6 +142,10 @@ func TestWeeklyDeathsHandlerFetchingSingleYearData(t *testing.T) {
 	got := resp.WeeklyDeaths
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("handler returned unexpected body: want %+v but got %+v\n", want, got)
+	}
+
+	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+		t.Errorf("handler returned unexpected content-type: got %s want %s", contentType, expectedContentType)
 	}
 }
 
@@ -172,6 +186,10 @@ func TestWeeklyDeathsHandlerFetchingDataForRangeOfYears(t *testing.T) {
 	if !reflect.DeepEqual(want, got) {
 		t.Fatalf("handler returned unexpected body: want %+v but got %+v\n", want, got)
 	}
+
+	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+		t.Errorf("handler returned unexpected content-type: got %s want %s", contentType, expectedContentType)
+	}
 }
 
 func TestWeeklyDeathsHandlerFetchingDataForNonexistingKey(t *testing.T) {
@@ -195,6 +213,10 @@ func TestWeeklyDeathsHandlerFetchingDataForNonexistingKey(t *testing.T) {
 	got := resp.WeeklyDeaths
 	if len(got) != 0 {
 		log.Fatalf("handler returned unexpected body: wanted empty slice but got %+v\n", got)
+	}
+
+	if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+		t.Errorf("handler returned unexpected content-type: got %s want %s", contentType, expectedContentType)
 	}
 }
 
@@ -233,6 +255,10 @@ func TestWeeklyDeathsHandlerMissingQueryParams(t *testing.T) {
 
 		if resp.ErrorMessage != tc.expectedErrorMessage {
 			t.Fatalf("expected %s but got %s", tc.expectedErrorMessage, resp.ErrorMessage)
+		}
+
+		if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {
+			t.Errorf("handler returned unexpected content-type: got %s want %s", contentType, expectedContentType)
 		}
 	}
 }

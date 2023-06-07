@@ -13,19 +13,18 @@ func TestTimestampFromFilename(t *testing.T) {
 	}
 
 	cases := []TestCase{
-		{fileName: "/foo/bar/20210112T102331.tsv.gz", want: time.Date(2021, 1, 12, 10, 23, 31, 0, time.UTC), shouldPass: true},
-		{fileName: "20210112T102331.tsv.gz", want: time.Date(2021, 1, 12, 10, 23, 31, 0, time.UTC), shouldPass: true},
-		{fileName: "/foo/bar/20210113T142331.tsv.gz", want: time.Date(2021, 1, 13, 14, 23, 31, 0, time.UTC), shouldPass: true},
+		{fileName: "/foo/bar/20210112T102331.tsv.gz", want: time.Date(2021, 1, 12, 10, 23, 31, 0, time.UTC)},
+		{fileName: "20210112T102331.tsv.gz", want: time.Date(2021, 1, 12, 10, 23, 31, 0, time.UTC)},
+		{fileName: "/foo/bar/20210113T142331.tsv.gz", want: time.Date(2021, 1, 13, 14, 23, 31, 0, time.UTC)},
 	}
 
-	for i, c := range cases {
-		ix := i + 1
+	for _, c := range cases {
 		got, err := timestampFromFileName(c.fileName)
 		if err != nil {
-			t.Fatalf("(%d) Expected error to be nil but got %s\n", ix, err)
+			t.Fatalf("Expected error to be nil but got %s\n", err)
 		}
 		if got != c.want {
-			t.Fatalf("(%d) wanted %s but got %s", ix, c.want, got)
+			t.Fatalf("wanted %s but got %s", c.want, got)
 		}
 	}
 }

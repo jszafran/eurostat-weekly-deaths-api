@@ -9,3 +9,9 @@ test:
 
 testverbose:
 	go test -v ./...
+
+coveragereport:
+	go test ./... -coverprofile=coverage.out
+
+coveragehtml:
+		go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out

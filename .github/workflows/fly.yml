@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - move_backend_code_to_separate_directory
     paths:
       - "cmd/**"
       - "internal/**"

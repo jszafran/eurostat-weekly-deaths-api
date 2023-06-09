@@ -54,7 +54,7 @@ func main() {
 	flag.IntVar(&port, "port", DefaultPort, "port to start server on")
 	flag.Parse()
 
-	err := godotenv.Load()
+	err := godotenv.Load("./.env")
 	if err != nil {
 		log.Println(".env file not found.")
 	}

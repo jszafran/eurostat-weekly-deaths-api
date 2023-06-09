@@ -5,9 +5,9 @@ on:
     branches:
       - master
     paths:
-      - "cmd/**"
-      - "internal/**"
-      - "fly.toml"
+      - "backend/cmd/**"
+      - "backend/internal/**"
+      - "backend/fly.toml"
       - .github/workflows/fly.yml
 
 jobs:

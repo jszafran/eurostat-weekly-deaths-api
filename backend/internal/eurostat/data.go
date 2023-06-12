@@ -170,7 +170,11 @@ func DataSnapshotFromEurostat() (DataSnapshot, error) {
 	defer resp.Body.Close()
 
 	ds.Timestamp = time.Now().UTC()
-	data, err := ParseData(resp.Body)
+	r, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return ds, err
+	}
+	data, err := ParseData(r)
 	if err != nil {
 		return ds, err
 	}

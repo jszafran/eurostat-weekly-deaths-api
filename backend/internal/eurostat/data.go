@@ -132,12 +132,12 @@ func DataSnapshotFromPath(path string) (DataSnapshot, error) {
 		return ds, err
 	}
 
-	rawText, err := textFromGZIP(file)
+	r, err := gzip.NewReader(file)
 	if err != nil {
 		return ds, err
 	}
 
-	parsedData, err := ParseData(rawText)
+	parsedData, err := ParseData(r)
 	if err != nil {
 		return ds, err
 	}
@@ -169,13 +169,8 @@ func DataSnapshotFromEurostat() (DataSnapshot, error) {
 	}
 	defer resp.Body.Close()
 
-	rawText, err := textFromGZIP(resp.Body)
-	if err != nil {
-		return ds, err
-	}
-
 	ds.Timestamp = time.Now().UTC()
-	data, err := ParseData(rawText)
+	data, err := ParseData(resp.Body)
 	if err != nil {
 		return ds, err
 	}

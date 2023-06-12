@@ -1,9 +1,9 @@
 package eurostat
 
 import (
-	"io"
+	"bytes"
+	"compress/gzip"
 	"log"
-	"os"
 	"reflect"
 	"testing"
 )
@@ -40,19 +40,21 @@ func TestParseData(t *testing.T) {
 			},
 		},
 	}
-	f, err := os.Open("testdata/eurostat_mockdata.tsv")
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	w.Write([]byte(`age,sex,unit,geo\time	2021W03	2021W02	2021W01
+TOTAL,F,NR,AD	:	:	1
+TOTAL,T,NR,PL	212	123	:
+TOTAL,M,NR,GB	25 p	13	:`))
+
+	w.Close()
+
+	r, err := gzip.NewReader(&buf)
 	if err != nil {
-		log.Fatalf("Error when opening fixture data: %s\n", err)
+		log.Fatal(err)
 	}
 
-	data, err := io.ReadAll(f)
-	if err != nil {
-		if err != nil {
-			log.Fatalf("Error when reading fixture data: %s\n", err)
-		}
-	}
-
-	parsedData, err := ParseData(string(data))
+	parsedData, err := ParseData(r)
 	if err != nil {
 		log.Fatalf("Expected error to be nil but got %s\n", err)
 	}

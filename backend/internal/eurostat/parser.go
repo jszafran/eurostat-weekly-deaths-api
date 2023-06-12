@@ -2,6 +2,7 @@ package eurostat
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"sort"
 	"strconv"
@@ -37,11 +38,17 @@ type metadata struct {
 // ParseData parses Eurostat raw string data into key value data store,
 // where key is a combination of country, age, gender and year values
 // and value is a slice of WeeklyDeaths struct.
-func ParseData(data string) (map[string][]WeeklyDeaths, error) {
+func ParseData(r io.ReadCloser) (map[string][]WeeklyDeaths, error) {
 	log.Println("Starting parsing data.")
 	results := make(map[string][]WeeklyDeaths)
 
-	split := strings.Split(data, "\n")
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return results, err
+	}
+	defer r.Close()
+
+	split := strings.Split(string(data), "\n")
 	header := split[0]
 	rows := split[1:]
 

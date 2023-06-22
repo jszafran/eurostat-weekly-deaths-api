@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"weekly_deaths/internal/eurostat"
 
@@ -54,6 +55,7 @@ func main() {
 	flag.IntVar(&port, "port", DefaultPort, "port to start server on")
 	flag.Parse()
 
+	startTime := time.Now()
 	err := godotenv.Load("./.env")
 	if err != nil {
 		log.Println(".env file not found.")
@@ -75,6 +77,7 @@ func main() {
 
 	router := app.routes()
 	log.Printf("Starting the server on :%d port\n", port)
+	log.Printf("Application start took %s.\n", time.Since(startTime))
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), router)
 	if err != nil {

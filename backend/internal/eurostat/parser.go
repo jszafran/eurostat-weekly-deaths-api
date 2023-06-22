@@ -68,6 +68,12 @@ func ParseData(r io.ReadCloser) (map[string][]WeeklyDeaths, error) {
 	}
 
 	log.Println("Parsing finished.")
+
+	for k := range results {
+		sort.Slice(results[k], func(i, j int) bool {
+			return results[k][i].Week < results[k][j].Week
+		})
+	}
 	return results, nil
 }
 
@@ -172,11 +178,6 @@ func parseLine(line string, woyPosMap map[int]weekOfYear, results map[string][]W
 		}
 
 		results[key] = append(results[key], WeeklyDeaths{Week: uint8(woy.Week), Deaths: uint32(dv)})
-
-		sort.Slice(results[key], func(i, j int) bool {
-			return results[key][i].Week < results[key][j].Week
-		})
-
 	}
 
 	return nil

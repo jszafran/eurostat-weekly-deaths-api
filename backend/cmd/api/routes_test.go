@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -59,7 +60,8 @@ func TestInfoHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	Commit = "6e874a04a4ebeb82128e2b2000c97649028218b6"
+	commit := "6e874a04a4ebeb82128e2b2000c97649028218b6"
+	os.Setenv("COMMIT", commit)
 
 	app := application{db: testingDB()}
 	handler := http.HandlerFunc(app.InfoHandler)
@@ -70,7 +72,7 @@ func TestInfoHandler(t *testing.T) {
 	expectedTimestamp := "2021-01-12T10:23:11Z"
 	expectedBody := fmt.Sprintf(
 		"{\"commit_hash\":\"%s\",\"data_downloaded_at_utc_time\":\"%s\"}",
-		Commit,
+		commit,
 		expectedTimestamp,
 	)
 

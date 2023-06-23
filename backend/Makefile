@@ -1,7 +1,7 @@
 BINARY_NAME=weekly_deaths_backend
 
 build:
-	cd cmd/api && go generate && go build  -o ../../bin/${BINARY_NAME} && chmod +x ../../bin/${BINARY_NAME}
+	cd cmd/api && go build  -o ../../bin/${BINARY_NAME} && chmod +x ../../bin/${BINARY_NAME}
 
 run: build
 	./bin/${BINARY_NAME}

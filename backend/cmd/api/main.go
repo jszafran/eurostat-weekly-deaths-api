@@ -17,10 +17,6 @@ import (
 // DefaultPort defines a default port that the server will be started on.
 const DefaultPort = 8080
 
-//go:generate sh -c "printf %s $(git rev-parse HEAD) > commit.txt"
-//go:embed commit.txt
-var Commit string
-
 func initializeDataSnapshot() (eurostat.DataSnapshot, error) {
 	var (
 		snapshot eurostat.DataSnapshot

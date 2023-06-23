@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"weekly_deaths/internal/eurostat"
@@ -107,12 +108,12 @@ func (app *application) LabelsHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(http.StatusOK, w, map[string][]MetadataLabel{"data": data})
 }
 
-// InfoHandler is an HTTP handler returnign metadata about the application:
-// - the commit from which currently running istance was built
+// InfoHandler is an HTTP handler returning metadata about the application:
+// - the commit from which currently running instance was built
 // - timestamp indicating when the data was downloaded from Eurostat
 func (app *application) InfoHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(http.StatusOK, w, InfoResponse{
-		CommitHash:       Commit,
+		CommitHash:       os.Getenv("COMMIT"),
 		DataDownloadedAt: app.db.Timestamp(),
 	})
 }

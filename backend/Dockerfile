@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go generate cmd/api/main.go && go build -o /weekly_deaths_api ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build -o /weekly_deaths_api ./cmd/api
 
 EXPOSE 8080
 
@@ -18,5 +18,8 @@ WORKDIR /
 COPY --from=BuildStage /weekly_deaths_api /weekly_deaths_api
 
 EXPOSE 8080
+
+ARG COMMIT
+ENV COMMIT=$COMMIT
 
 ENTRYPOINT ["/weekly_deaths_api"]

@@ -105,3 +105,6 @@ terraform.rc
 
 # Goland
 .idea/
+
+backend/cmd/api/commit.txt
+backend/cmd/sandbox

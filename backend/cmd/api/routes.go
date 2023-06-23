@@ -5,27 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"runtime/debug"
 	"strconv"
 
 	"weekly_deaths/internal/eurostat"
 
 	"github.com/go-chi/chi/v5"
 )
-
-// Commit variable stores an information about
-// current commit that the application was built from.
-var Commit = func() string {
-	if info, ok := debug.ReadBuildInfo(); ok {
-		for _, setting := range info.Settings {
-			if setting.Key == "vcs.revision" {
-				return setting.Value
-			}
-		}
-	}
-
-	return ""
-}()
 
 type application struct {
 	db *eurostat.InMemoryDB

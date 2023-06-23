@@ -1,4 +1,4 @@
-FROM golang:1.20
+FROM golang:1.20-alpine3.16 AS BuildStage
 
 WORKDIR /app
 
@@ -11,4 +11,12 @@ RUN CGO_ENABLED=0 GOOS=linux go generate && go build -o /weekly_deaths_api ./cmd
 
 EXPOSE 8080
 
-CMD ["/weekly_deaths_api"]
+FROM alpine:latest
+
+WORKDIR /
+
+COPY --from=BuildStage /weekly_deaths_api /weekly_deaths_api
+
+EXPOSE 8080
+
+ENTRYPOINT ["/weekly_deaths_api"]

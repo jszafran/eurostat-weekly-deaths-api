@@ -17,6 +17,16 @@ import (
 // DefaultPort defines a default port that the server will be started on.
 const DefaultPort = 8080
 
+func ensureAuthCredentialsLoaded(app application) {
+	if app.auth.username == "" {
+		log.Fatal("Auth username not found in env vars.")
+	}
+
+	if app.auth.password == "" {
+		log.Fatal("Auth password not found in env vars.")
+	}
+}
+
 func initializeDataSnapshot() (eurostat.DataSnapshot, error) {
 	var (
 		snapshot eurostat.DataSnapshot
@@ -75,6 +85,9 @@ func main() {
 	app := application{
 		db: db,
 	}
+	app.auth.username = os.Getenv("AUTH_USERNAME")
+	app.auth.password = os.Getenv("AUTH_PASSWORD")
+	ensureAuthCredentialsLoaded(app)
 
 	router := app.routes()
 	log.Printf("Starting the server on :%d port\n", port)

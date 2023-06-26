@@ -14,7 +14,11 @@ import (
 )
 
 type application struct {
-	db *eurostat.InMemoryDB
+	db   *eurostat.InMemoryDB
+	auth struct {
+		username string
+		password string
+	}
 }
 
 func (app *application) routes() *chi.Mux {
@@ -23,8 +27,7 @@ func (app *application) routes() *chi.Mux {
 	router.Get("/api/weekly_deaths", app.WeeklyDeathsHandler)
 	router.Get("/api/labels", app.LabelsHandler)
 	router.Get("/api/info", app.InfoHandler)
-	// TODO: Uncomment when basic auth is implemented
-	// router.Post("/api/update_data", app.UpdateDataHandler)
+	router.Post("/api/update_data", app.basicAuth(app.UpdateDataHandler))
 
 	return router
 }

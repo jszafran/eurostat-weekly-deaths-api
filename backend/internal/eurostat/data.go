@@ -1,11 +1,13 @@
 package eurostat
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -152,6 +154,26 @@ func DataSnapshotFromPath(path string) (DataSnapshot, error) {
 	return ds, nil
 }
 
+func persistSnapshot(b []byte, timestamp time.Time) {
+	if os.Getenv("PERSIST_LIVE_SNAPSHOTS") != "true" {
+		return
+	}
+
+	smg, err := NewSnapshotManager(os.Getenv("S3_BUCKET"))
+	if err != nil {
+		log.Printf("Failed to create snapshot manager: %s", err)
+		return
+	}
+
+	err = smg.PersistSnapshot(bytes.NewReader(b), timestamp)
+	if err != nil {
+		log.Printf("Failed to persist snapshot to S3: %s", err)
+		return
+	}
+
+	log.Println("Snapshot successfully persisted to S3!")
+}
+
 func DataSnapshotFromEurostat() (DataSnapshot, error) {
 	var ds DataSnapshot
 
@@ -169,16 +191,25 @@ func DataSnapshotFromEurostat() (DataSnapshot, error) {
 	}
 	defer resp.Body.Close()
 
-	ds.Timestamp = time.Now().UTC()
-	r, err := gzip.NewReader(resp.Body)
+	timestamp := time.Now().UTC()
+	ds.Timestamp = timestamp
+
+	sb, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return ds, err
 	}
+
+	r, err := gzip.NewReader(bytes.NewReader(sb))
+	if err != nil {
+		return ds, err
+	}
+
 	data, err := ParseData(r)
 	if err != nil {
 		return ds, err
 	}
 	ds.Data = data
 
+	persistSnapshot(sb, timestamp)
 	return ds, nil
 }

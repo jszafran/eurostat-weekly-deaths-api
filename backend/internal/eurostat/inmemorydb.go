@@ -45,7 +45,7 @@ func (db *InMemoryDB) GetWeeklyDeaths(
 		for _, r := range db.data[key] {
 			res = append(res, WeekYearDeaths{Week: r.Week, Deaths: r.Deaths, Year: uint16(year)})
 		}
-		defer db.dataMu.RUnlock()
+		db.dataMu.RUnlock()
 	}
 
 	return res, nil
@@ -58,14 +58,14 @@ func (db *InMemoryDB) LoadSnapshot(snapshot DataSnapshot) {
 	db.data = snapshot.Data
 	db.dataTimestamp = snapshot.Timestamp
 
-	defer db.dataMu.Unlock()
-	defer db.dataTimestampMu.Unlock()
+	db.dataMu.Unlock()
+	db.dataTimestampMu.Unlock()
 }
 
 func (db *InMemoryDB) Timestamp() time.Time {
 	db.dataTimestampMu.RLock()
 	ts := db.dataTimestamp
-	defer db.dataTimestampMu.RUnlock()
+	db.dataTimestampMu.RUnlock()
 
 	return ts
 }

@@ -11,6 +11,8 @@ processes = []
 [env]
   PORT = "8080"
   DEPLOY_ENV = "production"
+  S3_BUCKET = "eurostat-weekly-deaths-snapshots"
+  PERSIST_LIVE_SNAPSHOTS = "false"
 
 [experimental]
   auto_rollback = true

@@ -13,6 +13,7 @@ processes = []
   DEPLOY_ENV = "production"
   S3_BUCKET = "eurostat-weekly-deaths-snapshots"
   PERSIST_LIVE_SNAPSHOTS = "true"
+  AWS_REGION = "us-east-1"
 
 [experimental]
   auto_rollback = true

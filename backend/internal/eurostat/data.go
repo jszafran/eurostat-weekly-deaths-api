@@ -19,9 +19,11 @@ import (
 const (
 	eurostatDataUrl = "https://ec.europa.eu/eurostat/estat-navtree-portlet-prod/BulkDownloadListing?file=data/demo_r_mwk_05.tsv.gz"
 
-	timestampLayout = "20060102T150405"
+	timestampLayout   = "20060102T150405"
+	dataFileExtension = ".tsv.gz"
 )
 
+// WeeklyDeaths represents a number of deaths reported
 // WeeklyDeaths represents a number of deaths reported
 // for given week. Lack of information is represented
 // with -1 value.
@@ -114,12 +116,21 @@ func makeRange(from int, to int) []int {
 	return rng
 }
 
+func parseTimestamp(name string) (time.Time, error) {
+	var ts time.Time
+	name = strings.Replace(name, dataFileExtension, "", -1)
+	ts, err := time.Parse(timestampLayout, name)
+	if err != nil {
+		return ts, err
+	}
+	return ts, nil
+}
+
 func timestampFromFileName(filePath string) (time.Time, error) {
 	var ts time.Time
 
 	filePath = path.Base(filePath)
-	filePath = strings.Replace(filePath, ".tsv.gz", "", -1)
-	ts, err := time.Parse(timestampLayout, filePath)
+	ts, err := parseTimestamp(filePath)
 	if err != nil {
 		return ts, err
 	}

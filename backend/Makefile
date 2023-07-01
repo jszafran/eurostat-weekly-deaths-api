@@ -17,3 +17,6 @@ test-coverage-report:
 
 test-check-coverage-report:
 		go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out
+
+run-sandbox:
+	cd cmd/sandbox && go run .

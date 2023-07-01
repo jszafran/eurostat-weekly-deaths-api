@@ -1,45 +1,37 @@
-# fly.toml file generated for eurostat-weekly-deaths-api on 2023-05-25T15:51:32+02:00
+# fly.toml file generated for eurostat-weekly-deaths-api on 2023-07-01T23:33:56+02:00
 
 app = "eurostat-weekly-deaths-api"
 kill_signal = "SIGINT"
 kill_timeout = 5
-processes = []
-
-[build]
-  dockerfile = "Dockerfile"
+primary_region = "cdg"
 
 [env]
-  PORT = "8080"
-  DEPLOY_ENV = "production"
-  S3_BUCKET = "eurostat-weekly-deaths-snapshots"
-  PERSIST_LIVE_SNAPSHOTS = "true"
   AWS_REGION = "us-east-1"
-
-[experimental]
-  auto_rollback = true
+  DEPLOY_ENV = "production"
+  FLY_PROCESS_GROUP = "app"
+  PERSIST_LIVE_SNAPSHOTS = "true"
+  PORT = "8080"
+  PRIMARY_REGION = "cdg"
+  S3_BUCKET = "eurostat-weekly-deaths-snapshots"
 
 [[services]]
-  http_checks = []
-  internal_port = 8080
-  processes = ["app"]
   protocol = "tcp"
-  script_checks = []
+  internal_port = 8080
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
   [services.concurrency]
+    type = "connections"
     hard_limit = 25
     soft_limit = 20
-    type = "connections"
-
-  [[services.ports]]
-    force_https = true
-    handlers = ["http"]
-    port = 80
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
 
   [[services.tcp_checks]]
-    grace_period = "1s"
     interval = "15s"
-    restart_limit = 0
     timeout = "2s"
+    restart_limit = 0

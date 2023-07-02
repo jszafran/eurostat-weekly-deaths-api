@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"weekly_deaths/internal/eurostat"
+	"weekly_deaths/eurostat"
 )
 
 const expectedContentType = "application/json"
@@ -61,9 +61,9 @@ func TestInfoHandler(t *testing.T) {
 	}
 
 	commit := "6e874a04a4ebeb82128e2b2000c97649028218b6"
-	os.Setenv("COMMIT", commit)
+	_ = os.Setenv("COMMIT", commit)
 
-	app := application{db: testingDB()}
+	app := Application{Db: testingDB()}
 	handler := http.HandlerFunc(app.InfoHandler)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -97,7 +97,7 @@ func TestWeeklyDeathsHandlerWithIncorrectYearRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app := application{db: testingDB()}
+	app := Application{Db: testingDB()}
 	handler := http.HandlerFunc(app.WeeklyDeathsHandler)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -124,7 +124,7 @@ func TestWeeklyDeathsHandlerFetchingSingleYearData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app := application{db: testingDB()}
+	app := Application{Db: testingDB()}
 	handler := http.HandlerFunc(app.WeeklyDeathsHandler)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -159,7 +159,7 @@ func TestWeeklyDeathsHandlerFetchingDataForRangeOfYears(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app := application{db: testingDB()}
+	app := Application{Db: testingDB()}
 	handler := http.HandlerFunc(app.WeeklyDeathsHandler)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -202,7 +202,7 @@ func TestWeeklyDeathsHandlerFetchingDataForNonexistingKey(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app := application{db: testingDB()}
+	app := Application{Db: testingDB()}
 	handler := http.HandlerFunc(app.WeeklyDeathsHandler)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -242,7 +242,7 @@ func TestWeeklyDeathsHandlerMissingQueryParams(t *testing.T) {
 		{queryParams: "?country=PL&gender=T&age=TOTAL&year_from=2020", expectedErrorMessage: "year_to url param required"},
 	}
 
-	app := application{db: testingDB()}
+	app := Application{Db: testingDB()}
 	handler := http.HandlerFunc(app.WeeklyDeathsHandler)
 
 	for _, tc := range testCases {

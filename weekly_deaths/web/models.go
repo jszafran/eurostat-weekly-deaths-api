@@ -1,9 +1,9 @@
-package main
+package web
 
 import (
 	"time"
 
-	"weekly_deaths/internal/eurostat"
+	"weekly_deaths/eurostat"
 )
 
 // WeeklyDeathsResponse represents a structure returned by

@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"encoding/json"
@@ -12,14 +12,14 @@ import (
 const testUsername = "foo"
 const testPassword = "bar"
 
-var app = application{
-	db: nil,
-	auth: struct {
-		username string
-		password string
+var app = Application{
+	Db: nil,
+	Auth: struct {
+		Username string
+		Password string
 	}{
-		username: testUsername,
-		password: testPassword,
+		Username: testUsername,
+		Password: testPassword,
 	},
 }
 

@@ -1,4 +1,4 @@
-package main
+package web
 
 var ageLabels = []MetadataLabel{
 	{Value: "TOTAL", Label: "Total", Order: 1, Type: "age"},

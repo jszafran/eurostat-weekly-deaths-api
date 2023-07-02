@@ -24,7 +24,6 @@ const (
 )
 
 // WeeklyDeaths represents a number of deaths reported
-// WeeklyDeaths represents a number of deaths reported
 // for given week. Lack of information is represented
 // with -1 value.
 type WeeklyDeaths struct {

@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"crypto/sha256"
@@ -7,14 +7,14 @@ import (
 )
 
 // credits: https://www.alexedwards.net/blog/basic-authentication-in-go
-func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
+func (app *Application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
 		if ok {
 			usernameHash := sha256.Sum256([]byte(username))
 			passwordHash := sha256.Sum256([]byte(password))
-			expectedUsernameHash := sha256.Sum256([]byte(app.auth.username))
-			expectedPasswordHash := sha256.Sum256([]byte(app.auth.password))
+			expectedUsernameHash := sha256.Sum256([]byte(app.Auth.Username))
+			expectedPasswordHash := sha256.Sum256([]byte(app.Auth.Password))
 
 			usernameMatch := subtle.ConstantTimeCompare(usernameHash[:], expectedUsernameHash[:]) == 1
 			passwordMatch := subtle.ConstantTimeCompare(passwordHash[:], expectedPasswordHash[:]) == 1

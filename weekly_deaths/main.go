@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "embed"
 	"flag"
 	"fmt"
 	"log"
@@ -9,20 +8,20 @@ import (
 	"os"
 	"time"
 
-	"weekly_deaths/internal/eurostat"
-
 	"github.com/joho/godotenv"
+	"weekly_deaths/eurostat"
+	"weekly_deaths/web"
 )
 
 // DefaultPort defines a default port that the server will be started on.
 const DefaultPort = 8080
 
-func ensureAuthCredentialsLoaded(app application) {
-	if app.auth.username == "" {
+func ensureAuthCredentialsLoaded(app web.Application) {
+	if app.Auth.Username == "" {
 		log.Fatal("Auth username not found in env vars.")
 	}
 
-	if app.auth.password == "" {
+	if app.Auth.Password == "" {
 		log.Fatal("Auth password not found in env vars.")
 	}
 }
@@ -93,14 +92,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app := application{
-		db: db,
+	app := web.Application{
+		Db: db,
 	}
-	app.auth.username = os.Getenv("AUTH_USERNAME")
-	app.auth.password = os.Getenv("AUTH_PASSWORD")
+	app.Auth.Username = os.Getenv("AUTH_USERNAME")
+	app.Auth.Password = os.Getenv("AUTH_PASSWORD")
 	ensureAuthCredentialsLoaded(app)
 
-	router := app.routes()
+	router := app.Routes()
 	log.Printf("Starting the server on :%d port\n", port)
 	log.Printf("Application start took %s.\n", time.Since(startTime))
 

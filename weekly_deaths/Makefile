@@ -1,7 +1,7 @@
 BINARY_NAME=weekly_deaths_backend
 
 build:
-	cd cmd/api && go build  -o ../../bin/${BINARY_NAME} && chmod +x ../../bin/${BINARY_NAME}
+	go build  -o ./bin/${BINARY_NAME} && chmod +x ./bin/${BINARY_NAME}
 
 run: build
 	./bin/${BINARY_NAME}
@@ -16,7 +16,13 @@ test-coverage-report:
 	go test ./... -coverprofile=coverage.out
 
 test-check-coverage-report:
-		go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out
+	go test ./... -coverprofile=coverage.out && go tool cover -html=coverage.out
 
 run-sandbox:
 	cd cmd/sandbox && go run .
+
+run-frontend:
+	cd frontend && npm run serve -- --port 9000
+
+build-frontend:
+	cd frontend && npm run build

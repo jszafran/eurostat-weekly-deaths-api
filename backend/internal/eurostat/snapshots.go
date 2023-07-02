@@ -17,6 +17,11 @@ import (
 	"time"
 )
 
+var (
+	ErrSnapshotsBucketEmpty      = errors.New("snapshots bucket is empty")
+	ErrNoParsableObjectsInBucket = errors.New("no objects with parsable names found in S3")
+)
+
 type SnapshotManager struct {
 	bucket  string
 	session *session.Session
@@ -100,13 +105,15 @@ func latestKey(keys []string) (string, error) {
 
 	switch n := len(keys); n {
 	case 0:
-		return latestKey, errors.New("snapshots bucket is empty")
+		return latestKey, ErrSnapshotsBucketEmpty
 
 	case 1:
 		_, err := parseTimestamp(keys[0])
 		if err != nil {
-			return latestKey, fmt.Errorf("the only object in s3 has unparsable name: %s", keys[0])
+			//return latestKey, fmt.Errorf("the only object in s3 has unparsable name: %s", keys[0])
+			return latestKey, fmt.Errorf("unparsable object name %s: %w", keys[0], err)
 		}
+
 		return keys[0], nil
 
 	default:
@@ -125,7 +132,7 @@ func latestKey(keys []string) (string, error) {
 	}
 
 	if maxTs.IsZero() {
-		return latestKey, errors.New("no objects with parsable names found in S3")
+		return latestKey, ErrNoParsableObjectsInBucket
 	}
 
 	return keys[maxIx], nil

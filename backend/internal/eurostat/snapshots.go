@@ -140,6 +140,8 @@ func latestKey(keys []string) (string, error) {
 
 func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 	var ds DataSnapshot
+
+	log.Println("Attempting to fetch latest snapshot from S3.")
 	obj := make([]string, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -169,6 +171,6 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 	if err != nil {
 		return ds, err
 	}
-
+	log.Printf("Successfully fetched S3 snapshot (timestamp: %s)\n", ds.Timestamp)
 	return ds, nil
 }

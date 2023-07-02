@@ -15,7 +15,7 @@ type WeeklyDeathsResponse struct {
 	WeeklyDeaths []eurostat.WeekYearDeaths `json:"weekly_deaths"`
 }
 
-// MetadataLabel is a represenation of label data
+// MetadataLabel is a representation of label data
 // that is returned by /api/labels endpoint.
 type MetadataLabel struct {
 	Value string `json:"value"`

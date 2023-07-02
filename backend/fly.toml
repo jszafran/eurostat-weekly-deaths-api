@@ -13,6 +13,7 @@ primary_region = "cdg"
   PORT = "8080"
   PRIMARY_REGION = "cdg"
   S3_BUCKET = "eurostat-weekly-deaths-snapshots"
+  USE_S3_AS_FALLBACK = "true"
 
 [[services]]
   protocol = "tcp"

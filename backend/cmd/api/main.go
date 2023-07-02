@@ -52,7 +52,18 @@ func initializeDataSnapshot() (eurostat.DataSnapshot, error) {
 	case "production":
 		log.Println("DEPLOY_ENV=production; reading live snapshot from Eurostat.")
 		snapshot, err = eurostat.DataSnapshotFromEurostat()
-		if err != nil {
+		if err != nil && os.Getenv("USE_S3_AS_FALLBACK") == "true" {
+			log.Printf("Reading live snapshot from Eurostat failed because of: %s\n", err)
+			sm, err := eurostat.NewSnapshotManager(os.Getenv("S3_BUCKET"))
+			if err != nil {
+				return snapshot, err
+			}
+
+			snapshot, err = sm.LatestSnapshotFromS3()
+			if err != nil {
+				return snapshot, err
+			}
+		} else {
 			return snapshot, err
 		}
 	}

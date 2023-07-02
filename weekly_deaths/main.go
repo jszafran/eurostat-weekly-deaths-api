@@ -1,28 +1,33 @@
 package main
 
 import (
-	_ "embed"
+	"embed"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"time"
 
-	"weekly_deaths/internal/eurostat"
-
 	"github.com/joho/godotenv"
+	"weekly_deaths/eurostat"
+	"weekly_deaths/web"
 )
 
 // DefaultPort defines a default port that the server will be started on.
 const DefaultPort = 8080
 
-func ensureAuthCredentialsLoaded(app application) {
-	if app.auth.username == "" {
+//go:embed frontend/dist
+var frontend embed.FS
+
+func ensureAuthCredentialsLoaded(app web.Application) {
+	if app.Auth.Username == "" {
 		log.Fatal("Auth username not found in env vars.")
 	}
 
-	if app.auth.password == "" {
+	if app.Auth.Password == "" {
 		log.Fatal("Auth password not found in env vars.")
 	}
 }
@@ -71,8 +76,19 @@ func initializeDataSnapshot() (eurostat.DataSnapshot, error) {
 	return snapshot, nil
 }
 
+func initMime() {
+	err := mime.AddExtensionType(".js", "text/javascript")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = mime.AddExtensionType(".css", "text/css")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 func main() {
 	var port int
+	initMime()
 
 	flag.IntVar(&port, "port", DefaultPort, "port to start server on")
 	flag.Parse()
@@ -93,14 +109,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app := application{
-		db: db,
+	app := web.Application{
+		Db: db,
 	}
-	app.auth.username = os.Getenv("AUTH_USERNAME")
-	app.auth.password = os.Getenv("AUTH_PASSWORD")
+	app.Auth.Username = os.Getenv("AUTH_USERNAME")
+	app.Auth.Password = os.Getenv("AUTH_PASSWORD")
 	ensureAuthCredentialsLoaded(app)
 
-	router := app.routes()
+	router := app.Routes()
+
+	stripped, err := fs.Sub(frontend, "frontend/dist")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	frontendFS := http.FileServer(http.FS(stripped))
+	router.Handle("/*", frontendFS)
+
 	log.Printf("Starting the server on :%d port\n", port)
 	log.Printf("Application start took %s.\n", time.Since(startTime))
 

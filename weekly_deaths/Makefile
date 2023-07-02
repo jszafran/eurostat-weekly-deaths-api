@@ -1,7 +1,7 @@
 BINARY_NAME=weekly_deaths_backend
 
 build:
-	go build  -o ./bin/${BINARY_NAME} && chmod +x ./bin/${BINARY_NAME}
+	go build -o ./bin/${BINARY_NAME} && chmod +x ./bin/${BINARY_NAME}
 
 run: build
 	./bin/${BINARY_NAME}

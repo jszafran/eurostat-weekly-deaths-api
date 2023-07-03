@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: go test ./...
+      - run: mkdir ./frontend/dist && go test ./...
         working-directory: ./weekly_deaths
 
   deploy:

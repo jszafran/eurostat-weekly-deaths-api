@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"mime"
 	"net/http"
 	"os"
 	"time"
@@ -76,19 +75,8 @@ func initializeDataSnapshot() (eurostat.DataSnapshot, error) {
 	return snapshot, nil
 }
 
-func initMime() {
-	err := mime.AddExtensionType(".js", "text/javascript")
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = mime.AddExtensionType(".css", "text/css")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 func main() {
 	var port int
-	initMime()
 
 	flag.IntVar(&port, "port", DefaultPort, "port to start server on")
 	flag.Parse()

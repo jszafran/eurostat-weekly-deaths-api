@@ -17,7 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: mkdir ./frontend/dist && go test ./...
+      # TODO: figure out how to handle this properly
+      - run: mkdir ./frontend/dist && touch ./frontend/dist/dummy.txt && go test ./...
         working-directory: ./weekly_deaths
 
   deploy:

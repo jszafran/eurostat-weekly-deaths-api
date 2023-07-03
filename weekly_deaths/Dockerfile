@@ -18,7 +18,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-COPY --from=FrontendBuildStage /usr/src/app/dist ./frontend/
+COPY --from=FrontendBuildStage /usr/src/app/dist ./frontend/dist
 RUN CGO_ENABLED=0 GOOS=linux go build -o /weekly_deaths_api
 
 EXPOSE 8080

@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <nav>
-      <router-link to="/">Home</router-link>
+<!--      <router-link to="/">Home</router-link>-->
     </nav>
     <router-view/>
   </div>
@@ -9,9 +9,12 @@
 
 <style>
 @import url('https://fonts.googleapis.com/css?family=Permanent+Marker');
+@import url('https://fonts.googleapis.com/css?family=Caprasimo');
+@import url('https://fonts.googleapis.com/css?family=Lobster');
+
 
 #app {
-  font-family: Permanent Marker, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Caprasimo, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
@@ -28,7 +31,7 @@ nav a {
 }
 
 nav a.router-link-exact-active {
-  color: #42b983;
+  color: #cdd5de;
 }
 
 body {

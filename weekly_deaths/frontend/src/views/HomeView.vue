@@ -13,7 +13,8 @@ export default {
   name: 'HomeView',
   components: {
     WelcomeScreen
-  }
+  },
+  title: 'Eurostat Weekly Deaths App'
 }
 </script>
 

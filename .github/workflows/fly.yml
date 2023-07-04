@@ -9,6 +9,7 @@ on:
       - "weekly_deaths/internal/**"
       - "weekly_deaths/fly.toml"
       - "weekly_deaths/Dockerfile"
+      - "weekly_deaths/frontend"
       - .github/workflows/fly.yml
 
 jobs:

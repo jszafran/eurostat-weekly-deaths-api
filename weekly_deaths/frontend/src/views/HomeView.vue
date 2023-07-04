@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <img alt="Vue logo" src="../assets/grave.png">
+
     <WelcomeScreen></WelcomeScreen>
   </div>
 </template>
@@ -21,5 +21,13 @@ export default {
 <style>
 img {
   max-width: 150px;
+}
+
+.death {
+  background: #3c78a8;
+  max-width: 150px;
+  margin: auto;
+  padding: 40px;
+  border-radius: 50%;
 }
 </style>

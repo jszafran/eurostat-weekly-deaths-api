@@ -13,6 +13,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+const ParamRequiredUserMessage = "This query url parameter is required."
+const FailedConversionToIntMessage = "Provided value cannot be converted to integer."
+
 type Application struct {
 	Db   *eurostat.InMemoryDB
 	Auth struct {
@@ -41,48 +44,50 @@ func (app *Application) Routes() *chi.Mux {
 // - year_to
 // All parameters are required and should be passed as query params.
 func (app *Application) WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		yearFrom int
+		yearTo   int
+		err      error
+	)
+	errors := make(map[string]string)
+
 	country := r.URL.Query().Get("country")
 	if country == "" {
-		writeJSONError(http.StatusBadRequest, w, "country url param required")
-		return
+		errors["country"] = ParamRequiredUserMessage
 	}
 
 	gender := r.URL.Query().Get("gender")
 	if gender == "" {
-		writeJSONError(http.StatusBadRequest, w, "gender url param required")
-		return
+		errors["gender"] = ParamRequiredUserMessage
 	}
 
 	age := r.URL.Query().Get("age")
 	if age == "" {
-		writeJSONError(http.StatusBadRequest, w, "age url param required")
-		return
+		errors["age"] = ParamRequiredUserMessage
 	}
 
 	yearFromStr := r.URL.Query().Get("year_from")
 	if yearFromStr == "" {
-		writeJSONError(http.StatusBadRequest, w, "year_from url param required")
-		return
-	}
-	yearFrom, err := strconv.Atoi(yearFromStr)
-	if err != nil {
-		writeJSONError(http.StatusBadRequest, w, fmt.Sprintf("value %s cannot be converted to int", yearFromStr))
-		return
+		errors["year_from"] = ParamRequiredUserMessage
+	} else {
+		yearFrom, err = strconv.Atoi(yearFromStr)
+		if err != nil {
+			errors["year_from"] = FailedConversionToIntMessage
+		}
 	}
 
 	yearToStr := r.URL.Query().Get("year_to")
 	if yearToStr == "" {
-		writeJSONError(http.StatusBadRequest, w, "year_to url param required")
-		return
-	}
-	yearTo, err := strconv.Atoi(yearToStr)
-	if err != nil {
-		writeJSONError(http.StatusBadRequest, w, fmt.Sprintf("value %s cannot be converted to int", yearToStr))
-		return
+		errors["year_to"] = ParamRequiredUserMessage
+	} else {
+		yearTo, err = strconv.Atoi(yearToStr)
+		if err != nil {
+			errors["year_to"] = FailedConversionToIntMessage
+		}
 	}
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	if len(errors) > 0 {
+		writeJSONError(http.StatusBadRequest, w, errors)
 		return
 	}
 

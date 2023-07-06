@@ -28,13 +28,6 @@ type weekOfYear struct {
 	Week int
 }
 
-// Metadata contains information about age, gender and country of particular record.
-type metadata struct {
-	Age     string
-	Gender  string
-	Country string
-}
-
 // ParseData parses Eurostat raw string data into key value data store,
 // where key is a combination of country, age, gender and year values
 // and value is a slice of WeeklyDeaths struct.

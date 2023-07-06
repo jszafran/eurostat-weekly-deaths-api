@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +21,13 @@ const expectedContentType = "application/json"
 func testTimestamp() time.Time {
 	return time.Date(2021, 1, 12, 10, 23, 11, 0, time.UTC)
 }
+
+type fieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+type errorResponse map[string][]fieldError
 
 func testingDB() *eurostat.InMemoryDB {
 	snapshot := eurostat.DataSnapshot{
@@ -223,27 +231,51 @@ func TestWeeklyDeathsHandlerFetchingDataForNonexistingKey(t *testing.T) {
 }
 
 func TestWeeklyDeathsHandlerMissingQueryParams(t *testing.T) {
-	type ErroResponse struct {
-		ErrorMessage string `json:"error"`
-	}
-
 	type TestCase struct {
-		queryParams          string
-		expectedErrorMessage string
+		queryParams    string
+		expectedErrors errorResponse
 	}
 
-	var resp ErroResponse
+	var resp errorResponse
 
 	testCases := []TestCase{
-		{queryParams: "?", expectedErrorMessage: "country url param required"},
-		{queryParams: "?country=PL", expectedErrorMessage: "gender url param required"},
-		{queryParams: "?country=PL&gender=T", expectedErrorMessage: "age url param required"},
-		{queryParams: "?country=PL&gender=T&age=TOTAL", expectedErrorMessage: "year_from url param required"},
-		{queryParams: "?country=PL&gender=T&age=TOTAL&year_from=2020", expectedErrorMessage: "year_to url param required"},
+		{queryParams: "?", expectedErrors: errorResponse{"error": []fieldError{
+			{
+				Field:   "country",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "age",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "gender",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "year_from",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "year_to",
+				Message: paramRequiredUserMessage,
+			},
+		},
+		}},
+		//{queryParams: "?country=PL", expectedErrorMessage: "gender url param required"},
+		//{queryParams: "?country=PL&gender=T", expectedErrorMessage: "age url param required"},
+		//{queryParams: "?country=PL&gender=T&age=TOTAL", expectedErrorMessage: "year_from url param required"},
+		//{queryParams: "?country=PL&gender=T&age=TOTAL&year_from=2020", expectedErrorMessage: "year_to url param required"},
 	}
 
 	app := Application{Db: testingDB()}
 	handler := http.HandlerFunc(app.WeeklyDeathsHandler)
+
+	sortErrors := func(a []fieldError) {
+		sort.Slice(a, func(i int, j int) bool {
+			return a[i].Field < a[j].Field
+		})
+	}
 
 	for _, tc := range testCases {
 		req, err := http.NewRequest("GET", tc.queryParams, nil)
@@ -255,8 +287,12 @@ func TestWeeklyDeathsHandlerMissingQueryParams(t *testing.T) {
 
 		json.NewDecoder(rr.Body).Decode(&resp)
 
-		if resp.ErrorMessage != tc.expectedErrorMessage {
-			t.Fatalf("expected %s but got %s", tc.expectedErrorMessage, resp.ErrorMessage)
+		wantErrors := tc.expectedErrors["error"]
+		gotErrors := resp["error"]
+		sortErrors(wantErrors)
+		sortErrors(gotErrors)
+		if !reflect.DeepEqual(wantErrors, gotErrors) {
+			t.Fatalf("expected %+v but got %+v", wantErrors, gotErrors)
 		}
 
 		if contentType := rr.Header().Get("Content-Type"); contentType != expectedContentType {

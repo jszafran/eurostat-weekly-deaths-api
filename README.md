@@ -1,6 +1,6 @@
 # Eurostat Weekly Deaths API
 
-![Fly.io deploy]https://github.com/jszafran/eurostat-weekly-deaths-api/actions/workflows/fly.yml/badge.svg
+![Fly.io deploy](https://github.com/jszafran/eurostat-weekly-deaths-api/actions/workflows/fly.yml/badge.svg)
 
 Eurostat publishes data for weekly deaths statistics among EU countries (weekly aggregates calculated for various age and gender groups).
 

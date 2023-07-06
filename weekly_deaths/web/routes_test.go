@@ -262,10 +262,58 @@ func TestWeeklyDeathsHandlerMissingQueryParams(t *testing.T) {
 			},
 		},
 		}},
-		//{queryParams: "?country=PL", expectedErrorMessage: "gender url param required"},
-		//{queryParams: "?country=PL&gender=T", expectedErrorMessage: "age url param required"},
-		//{queryParams: "?country=PL&gender=T&age=TOTAL", expectedErrorMessage: "year_from url param required"},
-		//{queryParams: "?country=PL&gender=T&age=TOTAL&year_from=2020", expectedErrorMessage: "year_to url param required"},
+		{queryParams: "?country=PL", expectedErrors: errorResponse{"error": []fieldError{
+			{
+				Field:   "age",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "gender",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "year_from",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "year_to",
+				Message: paramRequiredUserMessage,
+			},
+		},
+		}},
+		{queryParams: "?country=PL&gender=T", expectedErrors: errorResponse{"error": []fieldError{
+			{
+				Field:   "age",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "year_from",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "year_to",
+				Message: paramRequiredUserMessage,
+			},
+		},
+		}},
+		{queryParams: "?country=PL&gender=T&age=TOTAL", expectedErrors: errorResponse{"error": []fieldError{
+			{
+				Field:   "year_from",
+				Message: paramRequiredUserMessage,
+			},
+			{
+				Field:   "year_to",
+				Message: paramRequiredUserMessage,
+			},
+		},
+		}},
+		{queryParams: "?country=PL&gender=T&age=TOTAL&year_from=2020", expectedErrors: errorResponse{"error": []fieldError{
+			{
+				Field:   "year_to",
+				Message: paramRequiredUserMessage,
+			},
+		},
+		}},
 	}
 
 	app := Application{Db: testingDB()}
@@ -285,7 +333,10 @@ func TestWeeklyDeathsHandlerMissingQueryParams(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		json.NewDecoder(rr.Body).Decode(&resp)
+		err = json.NewDecoder(rr.Body).Decode(&resp)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		wantErrors := tc.expectedErrors["error"]
 		gotErrors := resp["error"]

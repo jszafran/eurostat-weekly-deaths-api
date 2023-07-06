@@ -7,11 +7,15 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
 	"weekly_deaths/eurostat"
 
 	"github.com/go-chi/chi/v5"
 )
+
+const paramRequiredUserMessage = "This query url parameter is required."
+const failedConversionToIntMessage = "Provided value cannot be converted to integer."
+
+const errorMessageKey = "message"
 
 type Application struct {
 	Db   *eurostat.InMemoryDB
@@ -32,6 +36,14 @@ func (app *Application) Routes() *chi.Mux {
 	return router
 }
 
+type WeeklyDeathsRequest struct {
+	country  string
+	age      string
+	gender   string
+	yearFrom int
+	yearTo   int
+}
+
 // WeeklyDeathsHandler is a HTTP handler func exposing
 // Eurostat weekly deaths data for given parameters:
 // - country
@@ -41,48 +53,50 @@ func (app *Application) Routes() *chi.Mux {
 // - year_to
 // All parameters are required and should be passed as query params.
 func (app *Application) WeeklyDeathsHandler(w http.ResponseWriter, r *http.Request) {
+	var (
+		yearFrom int
+		yearTo   int
+		err      error
+	)
+	errors := make([]map[string]string, 0)
+
 	country := r.URL.Query().Get("country")
 	if country == "" {
-		writeJSONError(http.StatusBadRequest, w, "country url param required")
-		return
+		errors = append(errors, map[string]string{"field": "country", errorMessageKey: paramRequiredUserMessage})
 	}
 
 	gender := r.URL.Query().Get("gender")
 	if gender == "" {
-		writeJSONError(http.StatusBadRequest, w, "gender url param required")
-		return
+		errors = append(errors, map[string]string{"field": "gender", errorMessageKey: paramRequiredUserMessage})
 	}
 
 	age := r.URL.Query().Get("age")
 	if age == "" {
-		writeJSONError(http.StatusBadRequest, w, "age url param required")
-		return
+		errors = append(errors, map[string]string{"field": "age", errorMessageKey: paramRequiredUserMessage})
 	}
 
 	yearFromStr := r.URL.Query().Get("year_from")
 	if yearFromStr == "" {
-		writeJSONError(http.StatusBadRequest, w, "year_from url param required")
-		return
-	}
-	yearFrom, err := strconv.Atoi(yearFromStr)
-	if err != nil {
-		writeJSONError(http.StatusBadRequest, w, fmt.Sprintf("value %s cannot be converted to int", yearFromStr))
-		return
+		errors = append(errors, map[string]string{"field": "year_from", errorMessageKey: paramRequiredUserMessage})
+	} else {
+		yearFrom, err = strconv.Atoi(yearFromStr)
+		if err != nil {
+			errors = append(errors, map[string]string{"field": "year_from", errorMessageKey: failedConversionToIntMessage})
+		}
 	}
 
 	yearToStr := r.URL.Query().Get("year_to")
 	if yearToStr == "" {
-		writeJSONError(http.StatusBadRequest, w, "year_to url param required")
-		return
-	}
-	yearTo, err := strconv.Atoi(yearToStr)
-	if err != nil {
-		writeJSONError(http.StatusBadRequest, w, fmt.Sprintf("value %s cannot be converted to int", yearToStr))
-		return
+		errors = append(errors, map[string]string{"field": "year_to", errorMessageKey: paramRequiredUserMessage})
+	} else {
+		yearTo, err = strconv.Atoi(yearToStr)
+		if err != nil {
+			errors = append(errors, map[string]string{"field": "year_to", errorMessageKey: failedConversionToIntMessage})
+		}
 	}
 
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	if len(errors) > 0 {
+		_ = writeJSONError(http.StatusBadRequest, w, errors)
 		return
 	}
 
@@ -94,14 +108,14 @@ func (app *Application) WeeklyDeathsHandler(w http.ResponseWriter, r *http.Reque
 		yearTo,
 	)
 	if err != nil {
-		writeJSONError(http.StatusInternalServerError, w, "internal server error")
+		_ = writeJSONError(http.StatusInternalServerError, w, "internal server error")
 		return
 	}
 
 	data := WeeklyDeathsResponse{Gender: gender, Age: age, Country: country, WeeklyDeaths: weeklyDeaths}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 // LabelsHandler is an HTTP handler returning labels translation

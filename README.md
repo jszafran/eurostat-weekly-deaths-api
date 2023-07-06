@@ -1,5 +1,7 @@
 # Eurostat Weekly Deaths API
 
+![Fly.io deploy]https://github.com/jszafran/eurostat-weekly-deaths-api/actions/workflows/fly.yml/badge.svg
+
 Eurostat publishes data for weekly deaths statistics among EU countries (weekly aggregates calculated for various age and gender groups).
 
 This projects downloads this data, loads it from compressed TSV file to sqlite database and exposes it via small HTTP API (written in Golang).

@@ -71,22 +71,6 @@ type DataSnapshot struct {
 	Timestamp time.Time
 }
 
-// TODO: implement S3 data provider
-
-func textFromGZIP(r io.Reader) (string, error) {
-	gzipReader, err := gzip.NewReader(r)
-	if err != nil {
-		return "", err
-	}
-
-	text, err := io.ReadAll(gzipReader)
-	if err != nil {
-		return "", err
-	}
-
-	return string(text), nil
-}
-
 // makeKey creates a string key used for storing the data in
 // application's memory (concatenation of country, gender, age and year).
 func makeKey(country string, gender string, age string, year int) (string, error) {

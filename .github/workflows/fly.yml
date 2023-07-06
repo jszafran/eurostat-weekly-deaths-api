@@ -5,8 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "weekly_deaths/cmd/**"
-      - "weekly_deaths/internal/**"
+      - "weekly_deaths/**.go"
       - "weekly_deaths/fly.toml"
       - "weekly_deaths/Dockerfile"
       - "weekly_deaths/frontend/**"

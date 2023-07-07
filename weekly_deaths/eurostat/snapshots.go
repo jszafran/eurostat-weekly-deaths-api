@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -47,6 +48,60 @@ func NewSnapshotManager(bucket string) (SnapshotManager, error) {
 		bucket:  bucket,
 		session: sess,
 	}, nil
+}
+
+func sortSnapshotKeys(keys []string) ([]string, error) {
+	type snapshotKey struct {
+		timestamp time.Time
+		key       string
+	}
+
+	var (
+		parsedKeys []snapshotKey
+		sortedKeys []string
+	)
+
+	for _, k := range keys {
+		ts, err := parseTimestamp(k)
+		if err != nil {
+			log.Printf("unparsable object name %s: %s", k, err)
+			continue
+		}
+
+		parsedKeys = append(parsedKeys, snapshotKey{
+			timestamp: ts,
+			key:       k,
+		})
+	}
+
+	if len(parsedKeys) == 0 {
+		return sortedKeys, ErrNoParsableObjectsInBucket
+	}
+
+	sort.Slice(parsedKeys, func(i, j int) bool {
+		return parsedKeys[i].timestamp.Before(parsedKeys[j].timestamp)
+	})
+
+	for _, k := range parsedKeys {
+		sortedKeys = append(sortedKeys, k.key)
+	}
+
+	return sortedKeys, nil
+}
+
+func latestKey(keys []string) (string, error) {
+	var latestKey string
+
+	if len(keys) == 0 {
+		return latestKey, ErrSnapshotsBucketEmpty
+	}
+
+	sk, err := sortSnapshotKeys(keys)
+	if err != nil {
+		return latestKey, err
+	}
+
+	return sk[len(sk)-1], nil
 }
 
 func (sm *SnapshotManager) PersistSnapshot(r io.Reader, timestamp time.Time) error {
@@ -96,52 +151,7 @@ func (sm *SnapshotManager) GetSnapshot(key string) (DataSnapshot, error) {
 	return ds, nil
 }
 
-func latestKey(keys []string) (string, error) {
-	var (
-		latestKey string
-		maxIx     int
-		maxTs     time.Time
-	)
-
-	switch n := len(keys); n {
-	case 0:
-		return latestKey, ErrSnapshotsBucketEmpty
-
-	case 1:
-		_, err := parseTimestamp(keys[0])
-		if err != nil {
-			//return latestKey, fmt.Errorf("the only object in s3 has unparsable name: %s", keys[0])
-			return latestKey, fmt.Errorf("unparsable object name %s: %w", keys[0], err)
-		}
-
-		return keys[0], nil
-
-	default:
-		for i, k := range keys {
-			ts, err := parseTimestamp(k)
-			if err != nil {
-				log.Printf("found object with unparsable name in s3 bucket: %s", k)
-				continue
-			}
-
-			if ts.After(maxTs) {
-				maxIx = i
-				maxTs = ts
-			}
-		}
-	}
-
-	if maxTs.IsZero() {
-		return latestKey, ErrNoParsableObjectsInBucket
-	}
-
-	return keys[maxIx], nil
-}
-
-func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
-	var ds DataSnapshot
-
-	log.Println("Attempting to fetch latest snapshot from S3.")
+func (sm *SnapshotManager) listSnapshots() ([]string, error) {
 	obj := make([]string, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -159,6 +169,18 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 		Bucket: aws.String(sm.bucket),
 		Prefix: aws.String(""),
 	}, callbackFn); err != nil {
+		return obj, err
+	}
+
+	return obj, nil
+}
+
+func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
+	var ds DataSnapshot
+
+	log.Println("Attempting to fetch latest snapshot from S3.")
+	obj, err := sm.listSnapshots()
+	if err != nil {
 		return ds, err
 	}
 

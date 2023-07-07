@@ -15,6 +15,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -151,7 +152,7 @@ func (sm *SnapshotManager) GetSnapshot(key string) (DataSnapshot, error) {
 	return ds, nil
 }
 
-func (sm *SnapshotManager) listSnapshots() ([]string, error) {
+func (sm *SnapshotManager) listSnapshotsChronologically() ([]string, error) {
 	obj := make([]string, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -172,14 +173,19 @@ func (sm *SnapshotManager) listSnapshots() ([]string, error) {
 		return obj, err
 	}
 
-	return obj, nil
+	sorted, err := sortSnapshotKeys(obj)
+	if err != nil {
+		return obj, err
+	}
+
+	return sorted, nil
 }
 
 func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 	var ds DataSnapshot
 
 	log.Println("Attempting to fetch latest snapshot from S3.")
-	obj, err := sm.listSnapshots()
+	obj, err := sm.listSnapshotsChronologically()
 	if err != nil {
 		return ds, err
 	}
@@ -195,4 +201,25 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 	}
 	log.Printf("Successfully fetched S3 snapshot (timestamp: %s)\n", ds.Timestamp)
 	return ds, nil
+}
+
+func (sm *SnapshotManager) CleanupSnapshots() error {
+	t := os.Getenv("CLEANUP_KEEP_N_LATEST_SNAPSHOTS")
+	threshold, err := strconv.Atoi(t)
+	if err != nil {
+		return fmt.Errorf("failed to read cleanup threshold env var: %w", err)
+	}
+
+	keys, err := sm.listSnapshotsChronologically()
+	delta := len(keys) - threshold
+	if delta < 0 {
+		log.Printf("exiting cleanup operation early as there are only %d snapshots and threshold is %d", len(keys), threshold)
+		return nil
+	}
+
+	keysToDelete := keys[:delta]
+
+	// TODO: implement actual deletion of objects from S3
+	log.Printf("This function would have deleted %+v snapshots!\n", keysToDelete)
+	return nil
 }

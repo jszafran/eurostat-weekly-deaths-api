@@ -63,7 +63,7 @@ func initializeDataSnapshot() (eurostat.DataSnapshot, error) {
 				return snapshot, err
 			}
 
-			snapshot, err = sm.LatestSnapshotFromS3()
+			snapshot, err = sm.LatestSnapshot()
 			if err != nil {
 				return snapshot, err
 			}

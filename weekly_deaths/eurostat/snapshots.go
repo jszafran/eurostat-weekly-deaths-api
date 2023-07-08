@@ -15,14 +15,12 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 var (
-	ErrSnapshotsBucketEmpty      = errors.New("snapshots bucket is empty")
 	ErrNoParsableObjectsInBucket = errors.New("no objects with parsable names found in S3")
 )
 
@@ -51,6 +49,53 @@ func NewSnapshotManager(bucket string) (SnapshotManager, error) {
 		bucket:  bucket,
 		session: sess,
 	}, nil
+}
+
+func (sm *SnapshotManager) PersistSnapshot(r io.Reader, timestamp time.Time) error {
+	uploader := s3manager.NewUploader(sm.session)
+	_, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(sm.bucket),
+		Key:    aws.String(fmt.Sprintf("%s%s", timestamp.Format(timestampLayout), dataFileExtension)),
+		Body:   r,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sm *SnapshotManager) getSnapshot(key string) (DataSnapshot, error) {
+	var (
+		ds   DataSnapshot
+		buff aws.WriteAtBuffer
+	)
+
+	s3Client := s3.New(sm.session)
+	downloader := s3manager.NewDownloaderWithClient(s3Client)
+	_, err := downloader.Download(&buff, &s3.GetObjectInput{
+		Key:    aws.String(key),
+		Bucket: aws.String(sm.bucket),
+	})
+
+	if err != nil {
+		return ds, err
+	}
+
+	ts, err := parseTimestamp(key)
+	if err != nil {
+		return ds, err
+	}
+
+	r, err := gzip.NewReader(bytes.NewReader(buff.Bytes()))
+	if err != nil {
+		return ds, err
+	}
+
+	data, err := ParseData(r)
+	ds.Data = data
+	ds.Timestamp = ts
+
+	return ds, nil
 }
 
 func sortSnapshotKeys(keys []string) ([]string, error) {
@@ -92,68 +137,6 @@ func sortSnapshotKeys(keys []string) ([]string, error) {
 	return sortedKeys, nil
 }
 
-func latestKey(keys []string) (string, error) {
-	var latestKey string
-
-	if len(keys) == 0 {
-		return latestKey, ErrSnapshotsBucketEmpty
-	}
-
-	sk, err := sortSnapshotKeys(keys)
-	if err != nil {
-		return latestKey, err
-	}
-
-	return sk[len(sk)-1], nil
-}
-
-func (sm *SnapshotManager) PersistSnapshot(r io.Reader, timestamp time.Time) error {
-	uploader := s3manager.NewUploader(sm.session)
-	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(sm.bucket),
-		Key:    aws.String(fmt.Sprintf("%s%s", timestamp.Format(timestampLayout), dataFileExtension)),
-		Body:   r,
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (sm *SnapshotManager) GetSnapshot(key string) (DataSnapshot, error) {
-	var (
-		ds   DataSnapshot
-		buff aws.WriteAtBuffer
-	)
-
-	s3Client := s3.New(sm.session)
-	downloader := s3manager.NewDownloaderWithClient(s3Client)
-	_, err := downloader.Download(&buff, &s3.GetObjectInput{
-		Key:    aws.String(key),
-		Bucket: aws.String(sm.bucket),
-	})
-
-	if err != nil {
-		return ds, err
-	}
-
-	ts, err := parseTimestamp(key)
-	if err != nil {
-		return ds, err
-	}
-
-	r, err := gzip.NewReader(bytes.NewReader(buff.Bytes()))
-	if err != nil {
-		return ds, err
-	}
-
-	data, err := ParseData(r)
-	ds.Data = data
-	ds.Timestamp = ts
-
-	return ds, nil
-}
-
 func (sm *SnapshotManager) listSnapshotsChronologically() ([]string, error) {
 	obj := make([]string, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -183,7 +166,7 @@ func (sm *SnapshotManager) listSnapshotsChronologically() ([]string, error) {
 	return sorted, nil
 }
 
-func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
+func (sm *SnapshotManager) LatestSnapshot() (DataSnapshot, error) {
 	var ds DataSnapshot
 
 	log.Println("Attempting to fetch latest snapshot from S3.")
@@ -192,12 +175,8 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 		return ds, err
 	}
 
-	lk, err := latestKey(obj)
-	if err != nil {
-		return ds, err
-	}
-
-	ds, err = sm.GetSnapshot(lk)
+	mostRecentKey := obj[len(obj)-1]
+	ds, err = sm.getSnapshot(mostRecentKey)
 	if err != nil {
 		return ds, err
 	}
@@ -205,17 +184,14 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 	return ds, nil
 }
 
-func (sm *SnapshotManager) CleanupSnapshots() {
-	t := os.Getenv("CLEANUP_KEEP_N_LATEST_SNAPSHOTS")
-	threshold, err := strconv.Atoi(t)
-	if err != nil {
-		log.Printf("Cleanup operation failed when converting CLEANUP_KEEP_N_LATEST_SNAPSHOTS to integer: %s\n", err)
-	}
-
+func (sm *SnapshotManager) CleanupSnapshots(keepSnapshotsNum int) {
 	keys, err := sm.listSnapshotsChronologically()
-	delta := len(keys) - threshold
+	if err != nil {
+		log.Printf("Error when listing snapshots chronologically: %s\n", err)
+	}
+	delta := len(keys) - keepSnapshotsNum
 	if delta <= 0 {
-		log.Printf("exiting cleanup operation early as there are only %d snapshots and threshold is %d", len(keys), threshold)
+		log.Printf("exiting cleanup operation early as there are only %d snapshots and threshold is %d", len(keys), keepSnapshotsNum)
 		return
 	}
 

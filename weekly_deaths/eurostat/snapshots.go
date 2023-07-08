@@ -16,6 +16,8 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -203,23 +205,45 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 	return ds, nil
 }
 
-func (sm *SnapshotManager) CleanupSnapshots() error {
+func (sm *SnapshotManager) CleanupSnapshots() {
 	t := os.Getenv("CLEANUP_KEEP_N_LATEST_SNAPSHOTS")
 	threshold, err := strconv.Atoi(t)
 	if err != nil {
-		return fmt.Errorf("failed to read cleanup threshold env var: %w", err)
+		log.Printf("Cleanup operation failed when converting CLEANUP_KEEP_N_LATEST_SNAPSHOTS to integer: %s\n", err)
 	}
 
 	keys, err := sm.listSnapshotsChronologically()
 	delta := len(keys) - threshold
-	if delta < 0 {
+	if delta <= 0 {
 		log.Printf("exiting cleanup operation early as there are only %d snapshots and threshold is %d", len(keys), threshold)
-		return nil
+		return
 	}
 
+	svc := s3.New(sm.session)
 	keysToDelete := keys[:delta]
 
-	// TODO: implement actual deletion of objects from S3
-	log.Printf("This function would have deleted %+v snapshots!\n", keysToDelete)
-	return nil
+	keysLen := len(keysToDelete)
+	wg := sync.WaitGroup{}
+	wg.Add(keysLen)
+	errNumber := int64(0)
+
+	for _, k := range keysToDelete {
+		key := k
+		go func() {
+			fmt.Printf("Attempting to delete %s key...\n", key)
+			defer wg.Done()
+			_, err := svc.DeleteObject(&s3.DeleteObjectInput{
+				Bucket: aws.String(sm.bucket),
+				Key:    aws.String(key),
+			})
+			if err != nil {
+				log.Printf("Error deleting %s key: %s\n", key, err)
+				atomic.AddInt64(&errNumber, 1)
+			}
+			fmt.Printf("Key %s deleted successfully!\n", key)
+		}()
+	}
+
+	wg.Wait()
+	fmt.Printf("Cleanup operation finished with %d errors.\n", errNumber)
 }

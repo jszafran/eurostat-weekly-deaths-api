@@ -8,13 +8,12 @@
 </template>
 
 <style>
-@import url('https://fonts.googleapis.com/css?family=Permanent+Marker');
 @import url('https://fonts.googleapis.com/css?family=Caprasimo');
-@import url('https://fonts.googleapis.com/css?family=Lobster');
+@import url('https://fonts.googleapis.com/css?family=Cardo');
 
 
 #app {
-  font-family: Caprasimo, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Cardo, Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;

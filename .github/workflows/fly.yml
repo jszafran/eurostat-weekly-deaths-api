@@ -10,6 +10,7 @@ on:
       - "weekly_deaths/Dockerfile"
       - "weekly_deaths/frontend/**"
       - .github/workflows/fly.yml
+  workflow_dispatch:
 
 jobs:
   test:

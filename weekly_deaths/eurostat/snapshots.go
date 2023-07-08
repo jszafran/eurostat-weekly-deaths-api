@@ -14,6 +14,10 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -47,6 +51,60 @@ func NewSnapshotManager(bucket string) (SnapshotManager, error) {
 		bucket:  bucket,
 		session: sess,
 	}, nil
+}
+
+func sortSnapshotKeys(keys []string) ([]string, error) {
+	type snapshotKey struct {
+		timestamp time.Time
+		key       string
+	}
+
+	var (
+		parsedKeys []snapshotKey
+		sortedKeys []string
+	)
+
+	for _, k := range keys {
+		ts, err := parseTimestamp(k)
+		if err != nil {
+			log.Printf("unparsable object name %s: %s", k, err)
+			continue
+		}
+
+		parsedKeys = append(parsedKeys, snapshotKey{
+			timestamp: ts,
+			key:       k,
+		})
+	}
+
+	if len(parsedKeys) == 0 {
+		return sortedKeys, ErrNoParsableObjectsInBucket
+	}
+
+	sort.Slice(parsedKeys, func(i, j int) bool {
+		return parsedKeys[i].timestamp.Before(parsedKeys[j].timestamp)
+	})
+
+	for _, k := range parsedKeys {
+		sortedKeys = append(sortedKeys, k.key)
+	}
+
+	return sortedKeys, nil
+}
+
+func latestKey(keys []string) (string, error) {
+	var latestKey string
+
+	if len(keys) == 0 {
+		return latestKey, ErrSnapshotsBucketEmpty
+	}
+
+	sk, err := sortSnapshotKeys(keys)
+	if err != nil {
+		return latestKey, err
+	}
+
+	return sk[len(sk)-1], nil
 }
 
 func (sm *SnapshotManager) PersistSnapshot(r io.Reader, timestamp time.Time) error {
@@ -96,52 +154,7 @@ func (sm *SnapshotManager) GetSnapshot(key string) (DataSnapshot, error) {
 	return ds, nil
 }
 
-func latestKey(keys []string) (string, error) {
-	var (
-		latestKey string
-		maxIx     int
-		maxTs     time.Time
-	)
-
-	switch n := len(keys); n {
-	case 0:
-		return latestKey, ErrSnapshotsBucketEmpty
-
-	case 1:
-		_, err := parseTimestamp(keys[0])
-		if err != nil {
-			//return latestKey, fmt.Errorf("the only object in s3 has unparsable name: %s", keys[0])
-			return latestKey, fmt.Errorf("unparsable object name %s: %w", keys[0], err)
-		}
-
-		return keys[0], nil
-
-	default:
-		for i, k := range keys {
-			ts, err := parseTimestamp(k)
-			if err != nil {
-				log.Printf("found object with unparsable name in s3 bucket: %s", k)
-				continue
-			}
-
-			if ts.After(maxTs) {
-				maxIx = i
-				maxTs = ts
-			}
-		}
-	}
-
-	if maxTs.IsZero() {
-		return latestKey, ErrNoParsableObjectsInBucket
-	}
-
-	return keys[maxIx], nil
-}
-
-func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
-	var ds DataSnapshot
-
-	log.Println("Attempting to fetch latest snapshot from S3.")
+func (sm *SnapshotManager) listSnapshotsChronologically() ([]string, error) {
 	obj := make([]string, 0)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -159,6 +172,23 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 		Bucket: aws.String(sm.bucket),
 		Prefix: aws.String(""),
 	}, callbackFn); err != nil {
+		return obj, err
+	}
+
+	sorted, err := sortSnapshotKeys(obj)
+	if err != nil {
+		return obj, err
+	}
+
+	return sorted, nil
+}
+
+func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
+	var ds DataSnapshot
+
+	log.Println("Attempting to fetch latest snapshot from S3.")
+	obj, err := sm.listSnapshotsChronologically()
+	if err != nil {
 		return ds, err
 	}
 
@@ -173,4 +203,47 @@ func (sm *SnapshotManager) LatestSnapshotFromS3() (DataSnapshot, error) {
 	}
 	log.Printf("Successfully fetched S3 snapshot (timestamp: %s)\n", ds.Timestamp)
 	return ds, nil
+}
+
+func (sm *SnapshotManager) CleanupSnapshots() {
+	t := os.Getenv("CLEANUP_KEEP_N_LATEST_SNAPSHOTS")
+	threshold, err := strconv.Atoi(t)
+	if err != nil {
+		log.Printf("Cleanup operation failed when converting CLEANUP_KEEP_N_LATEST_SNAPSHOTS to integer: %s\n", err)
+	}
+
+	keys, err := sm.listSnapshotsChronologically()
+	delta := len(keys) - threshold
+	if delta <= 0 {
+		log.Printf("exiting cleanup operation early as there are only %d snapshots and threshold is %d", len(keys), threshold)
+		return
+	}
+
+	svc := s3.New(sm.session)
+	keysToDelete := keys[:delta]
+
+	keysLen := len(keysToDelete)
+	wg := sync.WaitGroup{}
+	wg.Add(keysLen)
+	errNumber := int64(0)
+
+	for _, k := range keysToDelete {
+		key := k
+		go func() {
+			fmt.Printf("Attempting to delete %s key...\n", key)
+			defer wg.Done()
+			_, err := svc.DeleteObject(&s3.DeleteObjectInput{
+				Bucket: aws.String(sm.bucket),
+				Key:    aws.String(key),
+			})
+			if err != nil {
+				log.Printf("Error deleting %s key: %s\n", key, err)
+				atomic.AddInt64(&errNumber, 1)
+			}
+			fmt.Printf("Key %s deleted successfully!\n", key)
+		}()
+	}
+
+	wg.Wait()
+	fmt.Printf("Cleanup operation finished with %d errors.\n", errNumber)
 }

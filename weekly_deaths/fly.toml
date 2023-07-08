@@ -14,6 +14,7 @@ primary_region = "cdg"
   PRIMARY_REGION = "cdg"
   S3_BUCKET = "eurostat-weekly-deaths-snapshots"
   USE_S3_AS_FALLBACK = "true"
+  CLEANUP_KEEP_N_LATEST_SNAPSHOTS = "5"
 
 [[services]]
   protocol = "tcp"

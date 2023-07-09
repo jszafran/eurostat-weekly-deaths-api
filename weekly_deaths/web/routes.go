@@ -32,7 +32,6 @@ func (app *Application) Routes() *chi.Mux {
 	router.Get("/api/labels", app.LabelsHandler)
 	router.Get("/api/info", app.InfoHandler)
 	router.Post("/api/update_data", app.basicAuth(app.UpdateDataHandler))
-	router.NotFound(app.NotFound)
 	return router
 }
 
@@ -150,5 +149,7 @@ func (app *Application) UpdateDataHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *Application) NotFound(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/#/404", http.StatusPermanentRedirect)
+	log.Println("in side redirect")
+
+	http.ServeFile(w, r, "/favicon.ico")
 }

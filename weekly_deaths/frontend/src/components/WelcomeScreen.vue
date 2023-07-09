@@ -21,7 +21,7 @@ h1 {
   font-size: 5rem;
   font-weight: 900;
   line-height: 1.1;
-  font-family: 'Caprasimo';
+  font-family: 'Caprasimo', 'sans-serif';
 }
 
 p {

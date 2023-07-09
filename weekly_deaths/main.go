@@ -114,17 +114,24 @@ func main() {
 
 	frontendFS := http.FileServer(http.FS(stripped))
 	router.Handle("/*", frontendFS)
+	notFoundHtml, err := frontend.ReadFile("frontend/dist/404.html")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// https://github.com/go-chi/chi/issues/155
 	workDir, _ := os.Getwd()
 	filesDir := filepath.Join(workDir, "frontend", "dist")
 	root := http.Dir(filesDir)
-	fs := http.StripPrefix("/", http.FileServer(root))
+	fsHandler := http.StripPrefix("/", http.FileServer(root))
+	router.NotFound(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(notFoundHtml)
+	}))
 	router.Get("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, err := os.Stat(fmt.Sprintf("%s", root) + r.RequestURI); os.IsNotExist(err) {
 			router.NotFoundHandler().ServeHTTP(w, r)
 		} else {
-			fs.ServeHTTP(w, r)
+			fsHandler.ServeHTTP(w, r)
 		}
 	}))
 
